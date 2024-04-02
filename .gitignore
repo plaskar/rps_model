@@ -1,0 +1,39 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Jupyter Notebook
+.ipynb_checkpoints/
+
+# Linux system files
+.*~
+*~
+
+# KDE directory view settings
+.directory
+
+# Thumbnails
+.thumbnails/
+*.thumb
+
+# Virtual environment
+venv/
+.env
+
+# Python environments
+.env/
+.venv/
+env/
+venv/
+ENV/
+
+# Spyder project settings
+.spyderproject
+.spyproject
+
+# Jupyter Lab workspace
+.jupyterlab-workspace
+
+# Session storage
+.session
