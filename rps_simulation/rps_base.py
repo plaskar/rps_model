@@ -1,13 +1,33 @@
 import numpy as np
 import matplotlib.pyplot as plt
 
+from rps_simulation.learning_curves import sigmoid_skill_update, exponential_skill_update, richards_skill_update 
+from rps_simulation.forgetting_curves import exponential_forgetting 
+from rps_simulation.practice_rate import simple_practice_rate
+from rps_simulation.waiting_times import exponential_waiting_time 
+
+
+##############################################################################
+### 1. RPS_Basic Class runs one instant of the model, giving the learning trajectory
+##############################################################################
+
 class RPS_Basic:
     """
-    The Basic RPS Model Class has the following features:
+    The Basic RPS Model Class makes one run of the model. 
     
-    1. The skill update function depends generally on the whole learning history
-    2. The updated function 
+    * It has a fixed forgetting rate, fixed learning rate. 
     
+    * Users have to specify:
+        1. "waiting_time_dist": the waiting time distribution
+        2. "skill_update_function": this should tell us how to update the skill, based on current skill
+        3. "forgetting_func": the forgetting function - exponential, power or something else. 
+            It will use the forgetting_rate which is fixed
+        4. "practice_rate_func": This should provide a positive practice rate (which controls wiating time)
+    
+    * The practice function takes as input the skill_levels history so far and generates an output practice rate
+    For the basic model, this is simply rate = a + b*skill_level[-1]
+    
+    * Multiple runs of the simulation for a fixed learning curve will be done in the next class
     """
     
     def __init__(self, waiting_time_dist, skill_update_func, forgetting_func, practice_rate_func, 
@@ -76,7 +96,7 @@ class RPS_Basic:
             self.practice_rates.append(next_practice_rate)
 
         ## Filling up Summary Attributes
-        self.final_skill = self.practice_times[-1]
+        self.final_skill = self.skill_levels[-1]
         self.final_practice_rate = self.practice_rates[-1]
         self.total_practice_events = len(self.practice_times) - 2
         self.time_lags = [ self.practice_times[i+1] - self.practice_times[i] for i in range(1,self.total_practice_events) ]
@@ -162,9 +182,9 @@ class RPS_Basic:
     
     
     # Plots a smoothed learning trajectory including the forgetting curves interpolated  between practice-events
-    def plot_learning_trajectory(self, least_count=0.01, n_points=10):
+    def plot_learning_trajectory(self, least_count=0.01, min_points=10):
         """Plots the cute learning trajectory, including the forgetting phase"""
-        interpolated_practice_times, interpolated_skill_levels = self.interpolate_learning_trajectory_dynamic(least_count, n_points)
+        interpolated_practice_times, interpolated_skill_levels = self.interpolate_learning_trajectory_dynamic(least_count, min_points)
         
         plt.figure(figsize=(10, 6))
         # plt.plot(interpolated_practice_times, interpolated_skill_levels, marker='o', linestyle='-')
@@ -187,7 +207,110 @@ class RPS_Basic:
         plt.tight_layout()
         plt.show()
 
+##############################################################################
+### 2. Class to have multiple runs of the basic model
+##############################################################################
+
+class RPS_Basic_Multirun:
+    """
+    Multiple Runs of the RPS_Basic class.
+    """
+    def __init__(self, waiting_time_dist, skill_update_func, forgetting_func, practice_rate_func, 
+                 n_sims=1000, initial_skill=0.1, initial_practice_rate=1, max_time=100, forgetting_rate=0.2):
+        # Class Attributes:
+        self.waiting_time_dist = waiting_time_dist
+        self.skill_update_func = skill_update_func
+        self.forgetting_func = forgetting_func
+        self.practice_rate_func = practice_rate_func
+        
+        self.n_sims = n_sims  # Number of simulations to run
+        self.initial_skill = initial_skill
+        self.initial_practice_rate = initial_practice_rate
+        self.max_time = max_time
+        self.forgetting_rate = forgetting_rate
+        
+        # Summary Data from all Runs:
+        self.final_skills = []  # To store final skill levels from all sims
+        self.practice_events_counts = []  # To store the number of practice events from all sims
+        self.all_skill_levels = [] # list of lists, contains skill_levels for each simulation run
+        self.all_practice_times = [] # contains practice_time list for each simulation run
+        self.all_practice_rates = [] # contains practice_time list for each simulation run
+        
+        self.interpolated_skills = []
+        self.interpolated_prac_times = []
+
+    def run_multiple_sims(self):
+        for _ in range(self.n_sims):
+            model = RPS_Basic(waiting_time_dist=self.waiting_time_dist, skill_update_func=self.skill_update_func,
+                              forgetting_func=self.forgetting_func, practice_rate_func=self.practice_rate_func,
+                              initial_skill=self.initial_skill, initial_practice_rate=self.initial_practice_rate, max_time=self.max_time,
+                              forgetting_rate=self.forgetting_rate)
+            model.run_simulation()
+            
+            interpolated_practice_times, interpolated_skill_levels = model.interpolate_learning_trajectory_dynamic(least_count=0.01, min_points=10)
+            
+            self.final_skills.append(model.final_skill)
+            self.practice_events_counts.append(model.total_practice_events)
+            self.all_skill_levels.append(model.skill_levels)
+            self.all_practice_times.append(model.practice_times)
+            
+            self.interpolated_prac_times.append(interpolated_practice_times)
+            self.interpolated_skills.append(interpolated_skill_levels)
     
+    def plot_final_skill_histogram(self, colour='blue', n_bins=50, save_location=False):
+        plt.figure(figsize=(10, 6))
+        plt.hist(self.final_skills, bins=[i/n_bins for i in range(n_bins+1)], color=colour, edgecolor='black')
+        plt.xlabel('Final Skill', fontsize=18)
+        plt.xlim([0,1])
+        # tick-params:
+        plt.tick_params(left = True, right = False , labelleft = True)
+        plt.xticks(fontsize=16)
+        plt.yticks(fontsize=16)
+        if save_location != False:
+            plt.savefig(save_location, dpi=512)
+        plt.show()
+        
+    
+    def plot_practice_events_histogram(self, colour='blue', n_bins=50, save_location=False):
+        plt.figure(figsize=(10, 6))
+        plt.hist(self.practice_events_counts, bins=[i/n_bins for i in range(n_bins+1)], color=colour, edgecolor='black')
+        plt.xlabel('Total Number of Practice Events', fontsize=18)
+        # tick-params:
+        plt.tick_params(left = True, right = False , labelleft = True)
+        plt.xticks(fontsize=16)
+        plt.yticks(fontsize=16)
+        if save_location != False:
+            plt.savefig(save_location, dpi=512)
+        plt.show()
+
+    def plot_trajectory_and_histogram(self, colour_lineplots='Black', colour_histogram='Blue', n_plots=100, n_bins=50, save_location=False):
+        # Create figure and axis objects
+        fig = plt.figure(figsize=(12, 6))
+        grid = plt.GridSpec(1, 2, width_ratios=[2, 1])  # 4:1 ratio for grid width
+        
+        # Plotting the skill trajectories of first n_plots learners
+        ax1 = fig.add_subplot(grid[0])
+        for skill_level, prac_times in zip(self.interpolated_skills[:n_plots], self.interpolated_prac_times[:n_plots]):
+            ax1.plot(prac_times, skill_level, '-', linewidth=0.5, alpha=0.7, color=colour_lineplots)  # Plot each trajectory
+        ax1.set_xlim(0, max([max(time) for time in self.all_practice_times]))  # Set x-axis limit based on maximum time
+        ax1.set_ylim(0, 1)
+        ax1.set_xlabel('Time', fontsize=19)
+        ax1.set_ylabel('Skill',  fontsize=19)
+        
+        # Creating the histogram on the right
+        ax2 = fig.add_subplot(grid[1])
+        ax2.hist(self.final_skills, bins=[i/n_bins for i in range(n_bins+1)], orientation='horizontal', color=colour_histogram, linewidth=0.5)
+        ax2.set_ylim(0, 1)
+        ax2.yaxis.tick_right() # Move y-axis ticks to the right
+        ax2.set_xlabel('Final Skill', fontsize=19)
+        plt.tick_params(left = False, right = False , labelleft = False)
+        #ax2.set_yticks()  # Remove y-axis tick labels
+        
+        plt.tight_layout()  # Adjust layout to fit
+        if save_location != False:
+            plt.savefig(save_location, dpi=512)
+        plt.show()
+        
 
     
 
