@@ -1,5 +1,45 @@
 import numpy as np 
 
-def exponential_forgetting(skill, time, forgetting_rate):
+def exponential_forgetting(skill, time, forgetting_rate=0.2):
+    """
+    Standard exponential forgetting. 
+    Inputs:
+    skill (starting skill), time (elapsed time), forgetting_rate
+    Outputs:
+    current skill after forgetting
+    """
     return skill * np.exp(-forgetting_rate * time)
+
+
+def power_forgetting(skill, time, forgetting_rate=0.2):
+    """
+    Standard Power forgetting.
+    Inputs:
+    skill (starting skill), time (elapsed time), forgetting_rate
+    Outputs:
+    current skill after forgetting
+    """
+    return skill/(1+time)**forgetting_rate
+
+
+
+def forgetting_rate_decreasing(beta_min, beta_max, n_practice, delta=0.1): 
+    """
+    CHANGING FORGETTING RATES WITH NUMBER OF PRACTICE EVENTS:
+    
+    Assumption is that forgetting rate lowers (negative-exponentially) from beta_max (starting forgetting rate) 
+    to beta_min (min. forgetting rate) as number of practice events n_prac increases. 
+    
+    How fast forgetting rate decreases is controlled by delta which is non-negative (>=0):
+    * delta=0 means forgetting rate is constant (and = beta_max)
+    * very larde delta (eg 1 trillion) means already after practicing once, forgetting rate = beta_min
+    * Default delta = 0.1 means after 10 practice events, forgetting rate moves 36% towards beta_min from beta_max 
+
+    The function returns the forgetting rate, given inputs beta_min, beta_max, n_practice and (optionally) delta
+    """
+    return beta_min + (beta_max - beta_min)*np.exp(-delta*n_practice)
+
+
+#def forgetting_rate_spaced()
+
 

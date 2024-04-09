@@ -10,3 +10,4 @@ def exponential_skill_update(skill):
    
 def richards_skill_update(skill, alpha=0.4, nu=1):
     return skill + alpha * (1 - (skill ** nu)) * skill
+
