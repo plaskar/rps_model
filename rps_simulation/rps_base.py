@@ -39,7 +39,6 @@ class RPS_Basic:
         ## parameters of the RPS_Basic class:
         self.waiting_time_dist = waiting_time_dist
         self.skill_update_func = skill_update_func
-        #self.forgetting_rate = forgetting_rate
         self.forgetting_func = forgetting_func
         self.practice_rate_func = practice_rate_func
 
@@ -77,8 +76,8 @@ class RPS_Basic:
 
             # If next practice time is beyond max_time, calculate final skill level:
             if next_prac_time > self.max_time:
-                final_skill = self.forgetting_func(current_skill, self.max_time - current_time)
-                final_practice_rate = self.practice_rate_func(self.skill_levels)  # same final_practice rate as at the last practice_event
+                final_skill = self.forgetting_func.calculate(current_skill, self.max_time - current_time)
+                final_practice_rate = self.practice_rate_func.calculate(self.skill_levels)  # same final_practice rate as at the last practice_event
                 self.practice_times.append(self.max_time)
                 self.skill_levels.append(final_skill) 
                 self.final_skill = final_skill 
@@ -86,13 +85,13 @@ class RPS_Basic:
                 break
             
             # Calculate skill level just before next practice event
-            skill_before_prac = self.forgetting_func(current_skill, wait_time)
+            skill_before_prac = self.forgetting_func.calculate(current_skill, wait_time)
             
             # Calculate skill level just after practice event
             skill_after_prac = self.skill_update_func(skill_before_prac)
             
             # Calculate practice rate for next practice event
-            next_practice_rate = self.practice_rate_func(self.skill_levels)
+            next_practice_rate = self.practice_rate_func.calculate(self.skill_levels)
             
             self.practice_times.append(next_prac_time)
             self.skill_levels.append(skill_after_prac)
@@ -174,7 +173,7 @@ class RPS_Basic:
             for t in times[:-1]:  # Exclude the last point to prevent overlap
                 elapsed_time = t - start_time
                 #interpolated_skill = self.skill_levels[i] * np.exp(-self.forgetting_rate * elapsed_time)
-                interpolated_skill = self.forgetting_func(self.skill_levels[i], elapsed_time)
+                interpolated_skill = self.forgetting_func.calculate(self.skill_levels[i], elapsed_time)
                 int_practice_times.append(t)
                 int_skill_levels.append(interpolated_skill)
         
@@ -251,13 +250,14 @@ class RPS_Basic_Multirun:
                               initial_skill=self.initial_skill, initial_practice_rate=self.initial_practice_rate, max_time=self.max_time)
             model.run_simulation()
             
+            # interpolating skills in-between practice events for smooth plots
             interpolated_practice_times, interpolated_skill_levels = model.interpolate_learning_trajectory_dynamic(least_count=0.01, min_points=10)
-            
+
+            # adding data from current sim
             self.final_skills.append(model.final_skill)
             self.practice_events_counts.append(model.total_practice_events)
             self.all_skill_levels.append(model.skill_levels)
             self.all_practice_times.append(model.practice_times)
-            
             self.interpolated_prac_times.append(interpolated_practice_times)
             self.interpolated_skills.append(interpolated_skill_levels)
     
@@ -303,11 +303,12 @@ class RPS_Basic_Multirun:
         
         # Creating the histogram on the right
         ax2 = fig.add_subplot(grid[1])
-        ax2.hist(self.final_skills, bins=[i/n_bins for i in range(n_bins+1)], orientation='horizontal', color=colour_histogram, linewidth=0.5)
+        ax2.hist(self.final_skills, bins=[i/n_bins for i in range(n_bins+1)], density=True, orientation='horizontal', color=colour_histogram, linewidth=0.5)
         ax2.set_ylim(0, 1)
         ax2.yaxis.tick_right() # Move y-axis ticks to the right
-        ax2.set_xlabel('Final Skill', fontsize=19)
-        plt.tick_params(left = False, right = False , labelleft = False)
+        ax2.yaxis.set_label_position("right")
+        ax2.set_ylabel('Final Skill', fontsize=19)
+        plt.tick_params(left = False, right = True ,  bottom=False, labelbottom=False, labelleft = False)
         #ax2.set_yticks()  # Remove y-axis tick labels
         
         plt.tight_layout()  # Adjust layout to fit
