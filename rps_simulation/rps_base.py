@@ -3,14 +3,13 @@ import matplotlib.pyplot as plt
 
 from rps_simulation.learning_curves import sigmoid_skill_update, exponential_skill_update, richards_skill_update 
 from rps_simulation.forgetting_curves import exponential_forgetting 
-from rps_simulation.practice_rate import simple_practice_rate
+from rps_simulation.practice_rate import simple_linear_rate
 from rps_simulation.waiting_times import exponential_waiting_time 
 
 
 ##############################################################################
 ### 1. RPS_Basic Class runs one instant of the model, giving the learning trajectory
 ##############################################################################
-
 class RPS_Basic:
     """
     The Basic RPS Model Class makes one run of the model. 
@@ -30,13 +29,17 @@ class RPS_Basic:
     * Multiple runs of the simulation for a fixed learning curve will be done in the next class
     """
     
-    def __init__(self, waiting_time_dist, skill_update_func, forgetting_func, practice_rate_func, 
-                 initial_skill=0.1, initial_practice_rate=1, max_time=100, forgetting_rate=0.2):
+    def __init__(self, 
+                 skill_update_func=exponential_skill_update, # by default, we have exponential update s_new = s_old + alpha*(1-s_old) 
+                 forgetting_func=exponential_forgetting, # default is exponential forgetting
+                 practice_rate_func=simple_linear_rate, # default is simple_linear_rate 
+                 waiting_time_dist = exponential_waiting_time, # default is exponential (NOT Pareto) waiting times 
+                 initial_skill=0.1, initial_practice_rate=1, max_time=100):
 
         ## parameters of the RPS_Basic class:
         self.waiting_time_dist = waiting_time_dist
         self.skill_update_func = skill_update_func
-        self.forgetting_rate = forgetting_rate
+        #self.forgetting_rate = forgetting_rate
         self.forgetting_func = forgetting_func
         self.practice_rate_func = practice_rate_func
 
@@ -74,7 +77,7 @@ class RPS_Basic:
 
             # If next practice time is beyond max_time, calculate final skill level:
             if next_prac_time > self.max_time:
-                final_skill = self.forgetting_func(current_skill, self.max_time - current_time, self.forgetting_rate)
+                final_skill = self.forgetting_func(current_skill, self.max_time - current_time)
                 final_practice_rate = self.practice_rate_func(self.skill_levels)  # same final_practice rate as at the last practice_event
                 self.practice_times.append(self.max_time)
                 self.skill_levels.append(final_skill) 
@@ -83,7 +86,7 @@ class RPS_Basic:
                 break
             
             # Calculate skill level just before next practice event
-            skill_before_prac = self.forgetting_func(current_skill, wait_time, self.forgetting_rate)
+            skill_before_prac = self.forgetting_func(current_skill, wait_time)
             
             # Calculate skill level just after practice event
             skill_after_prac = self.skill_update_func(skill_before_prac)
@@ -170,7 +173,8 @@ class RPS_Basic:
             
             for t in times[:-1]:  # Exclude the last point to prevent overlap
                 elapsed_time = t - start_time
-                interpolated_skill = self.skill_levels[i] * np.exp(-self.forgetting_rate * elapsed_time)
+                #interpolated_skill = self.skill_levels[i] * np.exp(-self.forgetting_rate * elapsed_time)
+                interpolated_skill = self.forgetting_func(self.skill_levels[i], elapsed_time)
                 int_practice_times.append(t)
                 int_skill_levels.append(interpolated_skill)
         
@@ -207,16 +211,17 @@ class RPS_Basic:
         plt.tight_layout()
         plt.show()
 
+
+
 ##############################################################################
 ### 2. Class to have multiple runs of the basic model
 ##############################################################################
-
 class RPS_Basic_Multirun:
     """
     Multiple Runs of the RPS_Basic class.
     """
     def __init__(self, waiting_time_dist, skill_update_func, forgetting_func, practice_rate_func, 
-                 n_sims=1000, initial_skill=0.1, initial_practice_rate=1, max_time=100, forgetting_rate=0.2):
+                 n_sims=1000, initial_skill=0.1, initial_practice_rate=1, max_time=100):
         # Class Attributes:
         self.waiting_time_dist = waiting_time_dist
         self.skill_update_func = skill_update_func
@@ -227,7 +232,7 @@ class RPS_Basic_Multirun:
         self.initial_skill = initial_skill
         self.initial_practice_rate = initial_practice_rate
         self.max_time = max_time
-        self.forgetting_rate = forgetting_rate
+        #self.forgetting_rate = forgetting_rate
         
         # Summary Data from all Runs:
         self.final_skills = []  # To store final skill levels from all sims
@@ -243,8 +248,7 @@ class RPS_Basic_Multirun:
         for _ in range(self.n_sims):
             model = RPS_Basic(waiting_time_dist=self.waiting_time_dist, skill_update_func=self.skill_update_func,
                               forgetting_func=self.forgetting_func, practice_rate_func=self.practice_rate_func,
-                              initial_skill=self.initial_skill, initial_practice_rate=self.initial_practice_rate, max_time=self.max_time,
-                              forgetting_rate=self.forgetting_rate)
+                              initial_skill=self.initial_skill, initial_practice_rate=self.initial_practice_rate, max_time=self.max_time)
             model.run_simulation()
             
             interpolated_practice_times, interpolated_skill_levels = model.interpolate_learning_trajectory_dynamic(least_count=0.01, min_points=10)
@@ -285,7 +289,7 @@ class RPS_Basic_Multirun:
 
     def plot_trajectory_and_histogram(self, colour_lineplots='Black', colour_histogram='Blue', n_plots=100, n_bins=50, save_location=False):
         # Create figure and axis objects
-        fig = plt.figure(figsize=(12, 6))
+        fig = plt.figure(figsize=(10, 6))
         grid = plt.GridSpec(1, 2, width_ratios=[2, 1])  # 4:1 ratio for grid width
         
         # Plotting the skill trajectories of first n_plots learners
