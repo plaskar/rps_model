@@ -19,9 +19,6 @@ class exponential_forgetting:
         final_skill = skill*np.exp(-self.forgetting_rate*time)
         return final_skill
 
-# def exponential_forgetting(skill, time, forgetting_rate=0.2):
-#     return skill * np.exp(-forgetting_rate * time)
-
 class power_forgetting:
     """
     Standard Power forgetting.
