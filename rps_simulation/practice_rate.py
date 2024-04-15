@@ -10,8 +10,7 @@ import numpy as np
 # 2. general_practice_rate: --- to do ----    
 """
 
-
-def simple_linear_rate(skill_history, a=0.2, b=5):
+class simple_linear_rate:
     """
     Simple Practice Rate Equation in Basic RPS Model:
             practice_rate = a + b*S
@@ -26,11 +25,17 @@ def simple_linear_rate(skill_history, a=0.2, b=5):
     Output:
         The practice rate (must be positive)
     """
-    practice_rate = a + b*skill_history[-1]
-    return practice_rate
+    
+    def __init__(self, a=0.2, b=5):
+        self.a= a
+        self.b = b
+
+    def calculate(self, skill_history):
+        practice_rate = self.a + self.b*skill_history[-1]
+        return practice_rate
 
 
-def linear_rate_plus_change(skill_history, a=0.2, b=5, c=1, min_rate=0.01):
+class linear_rate_plus_change:
     """
     practice rate equation now has an additional term c*(S - S_prev):
                 practice_rate = a + b*S + c*(S - S_prev)
@@ -49,15 +54,22 @@ def linear_rate_plus_change(skill_history, a=0.2, b=5, c=1, min_rate=0.01):
     
     NOTE: Since practice rate must always be positive, there is a hard lower limit of min_rate built in which must be positive
     """
-    if len(skill_history) >= 3: # at least 2 practice events
-        practice_rate = max(a + b*skill_history[-1] + c*(skill_history[-1] - skill_history[-2]), min_rate)
-    else: # if only 1 practice event so far
-        practice_rate = a + b*skill_history[-1]
     
-    return practice_rate
+    def __init__(self, a=0.2, b=5, c=1, min_rate=0.01):
+        self.a = a
+        self.b = b
+        self.c = c
+        self.min_rate = min_rate
+        
+    def calculate(self, skill_history):
+        if len(skill_history) >= 3: # at least 2 practice events
+            practice_rate = max(self.a + self.b*skill_history[-1] + self.c*(skill_history[-1] - skill_history[-2]), self.min_rate)
+        else: # if only 1 practice event so far
+            practice_rate = self.a + self.b*skill_history[-1]
+        return practice_rate        
 
 
-def general_linear_rate(skill_history, weights, min_rate=0.01):
+class general_linear_rate:
     """
     In both the cases above, the practice_rate is a linear function of skill history (call it 's'):
     
@@ -76,20 +88,19 @@ def general_linear_rate(skill_history, weights, min_rate=0.01):
                    w1 is the weight given to skill_history[-1], the skill after the most recent practice effect
                    w2 weight given to skill_history[-2], the skill after last practice event and so on....
     
-    """
-    
-    # converting to numpy array (in case input is python list)
-    w = np.array(weights)
-    s = np.array(skill_history)
-    
-    length = min(len(skill_history), len(weights)-1)  # number of terms in skill_array to consider 
-    
-    practice_rate = max(np.sum(np.flip(s[-length:])*w[1:]) + w[0], min_rate)
-    
-    return practice_rate
+    """    
+    def __init__(self, weights, min_rate=0.01):
+        self.weights =weights
+        self.min_rate = min_rate
 
-
-
+    def calculate(self, skill_history):
+        # converting to numpy array (in case input is python list)
+        w = np.array(self.weights)
+        s = np.array(skill_history)
+        
+        length = min(len(s), len(w)-1)  # number of terms in skill_array to consider
+        practice_rate = max(np.sum(np.flip(s[-length:])*w[1:]) + w[0], self.min_rate)
+        return practice_rate
 
 
 

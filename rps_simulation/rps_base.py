@@ -1,7 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 
-from rps_simulation.learning_curves import sigmoid_skill_update, exponential_skill_update, richards_skill_update 
+from rps_simulation.learning_curves import exponential_learning
 from rps_simulation.forgetting_curves import exponential_forgetting 
 from rps_simulation.practice_rate import simple_linear_rate
 from rps_simulation.waiting_times import exponential_waiting_time 
@@ -18,7 +18,7 @@ class RPS_Basic:
     
     * Users have to specify:
         1. "waiting_time_dist": the waiting time distribution
-        2. "skill_update_function": this should tell us how to update the skill, based on current skill
+        2. "learning_func": this should tell us how to update the skill, based on current skill
         3. "forgetting_func": the forgetting function - exponential, power or something else. 
             It will use the forgetting_rate which is fixed
         4. "practice_rate_func": This should provide a positive practice rate (which controls wiating time)
@@ -30,7 +30,7 @@ class RPS_Basic:
     """
     
     def __init__(self, 
-                 skill_update_func=exponential_skill_update, # by default, we have exponential update s_new = s_old + alpha*(1-s_old) 
+                 learning_func=exponential_learning, # by default, we have exponential update s_new = s_old + alpha*(1-s_old) 
                  forgetting_func=exponential_forgetting, # default is exponential forgetting
                  practice_rate_func=simple_linear_rate, # default is simple_linear_rate 
                  waiting_time_dist = exponential_waiting_time, # default is exponential (NOT Pareto) waiting times 
@@ -38,8 +38,7 @@ class RPS_Basic:
 
         ## parameters of the RPS_Basic class:
         self.waiting_time_dist = waiting_time_dist
-        self.skill_update_func = skill_update_func
-        #self.forgetting_rate = forgetting_rate
+        self.learning_func = learning_func
         self.forgetting_func = forgetting_func
         self.practice_rate_func = practice_rate_func
 
@@ -77,8 +76,8 @@ class RPS_Basic:
 
             # If next practice time is beyond max_time, calculate final skill level:
             if next_prac_time > self.max_time:
-                final_skill = self.forgetting_func(current_skill, self.max_time - current_time)
-                final_practice_rate = self.practice_rate_func(self.skill_levels)  # same final_practice rate as at the last practice_event
+                final_skill = self.forgetting_func.calculate(current_skill, self.max_time - current_time)
+                final_practice_rate = self.practice_rate_func.calculate(self.skill_levels)  # same final_practice rate as at the last practice_event
                 self.practice_times.append(self.max_time)
                 self.skill_levels.append(final_skill) 
                 self.final_skill = final_skill 
@@ -86,13 +85,13 @@ class RPS_Basic:
                 break
             
             # Calculate skill level just before next practice event
-            skill_before_prac = self.forgetting_func(current_skill, wait_time)
+            skill_before_prac = self.forgetting_func.calculate(current_skill, wait_time)
             
             # Calculate skill level just after practice event
-            skill_after_prac = self.skill_update_func(skill_before_prac)
+            skill_after_prac = self.learning_func.updated_skill(skill_before_prac)
             
             # Calculate practice rate for next practice event
-            next_practice_rate = self.practice_rate_func(self.skill_levels)
+            next_practice_rate = self.practice_rate_func.calculate(self.skill_levels)
             
             self.practice_times.append(next_prac_time)
             self.skill_levels.append(skill_after_prac)
@@ -174,7 +173,7 @@ class RPS_Basic:
             for t in times[:-1]:  # Exclude the last point to prevent overlap
                 elapsed_time = t - start_time
                 #interpolated_skill = self.skill_levels[i] * np.exp(-self.forgetting_rate * elapsed_time)
-                interpolated_skill = self.forgetting_func(self.skill_levels[i], elapsed_time)
+                interpolated_skill = self.forgetting_func.calculate(self.skill_levels[i], elapsed_time)
                 int_practice_times.append(t)
                 int_skill_levels.append(interpolated_skill)
         
@@ -220,11 +219,11 @@ class RPS_Basic_Multirun:
     """
     Multiple Runs of the RPS_Basic class.
     """
-    def __init__(self, waiting_time_dist, skill_update_func, forgetting_func, practice_rate_func, 
+    def __init__(self, waiting_time_dist, learning_func, forgetting_func, practice_rate_func, 
                  n_sims=1000, initial_skill=0.1, initial_practice_rate=1, max_time=100):
         # Class Attributes:
         self.waiting_time_dist = waiting_time_dist
-        self.skill_update_func = skill_update_func
+        self.learning_func = learning_func
         self.forgetting_func = forgetting_func
         self.practice_rate_func = practice_rate_func
         
@@ -246,18 +245,19 @@ class RPS_Basic_Multirun:
 
     def run_multiple_sims(self):
         for _ in range(self.n_sims):
-            model = RPS_Basic(waiting_time_dist=self.waiting_time_dist, skill_update_func=self.skill_update_func,
+            model = RPS_Basic(waiting_time_dist=self.waiting_time_dist, learning_func=self.learning_func,
                               forgetting_func=self.forgetting_func, practice_rate_func=self.practice_rate_func,
                               initial_skill=self.initial_skill, initial_practice_rate=self.initial_practice_rate, max_time=self.max_time)
             model.run_simulation()
             
+            # interpolating skills in-between practice events for smooth plots
             interpolated_practice_times, interpolated_skill_levels = model.interpolate_learning_trajectory_dynamic(least_count=0.01, min_points=10)
-            
+
+            # adding data from current sim
             self.final_skills.append(model.final_skill)
             self.practice_events_counts.append(model.total_practice_events)
             self.all_skill_levels.append(model.skill_levels)
             self.all_practice_times.append(model.practice_times)
-            
             self.interpolated_prac_times.append(interpolated_practice_times)
             self.interpolated_skills.append(interpolated_skill_levels)
     
@@ -303,11 +303,12 @@ class RPS_Basic_Multirun:
         
         # Creating the histogram on the right
         ax2 = fig.add_subplot(grid[1])
-        ax2.hist(self.final_skills, bins=[i/n_bins for i in range(n_bins+1)], orientation='horizontal', color=colour_histogram, linewidth=0.5)
+        ax2.hist(self.final_skills, bins=[i/n_bins for i in range(n_bins+1)], density=True, orientation='horizontal', color=colour_histogram, linewidth=0.5)
         ax2.set_ylim(0, 1)
         ax2.yaxis.tick_right() # Move y-axis ticks to the right
+        #ax2.yaxis.set_label_position("bottom")
         ax2.set_xlabel('Final Skill', fontsize=19)
-        plt.tick_params(left = False, right = False , labelleft = False)
+        plt.tick_params(left = False, right = True ,  bottom=False, labelbottom=False, labelleft = False)
         #ax2.set_yticks()  # Remove y-axis tick labels
         
         plt.tight_layout()  # Adjust layout to fit

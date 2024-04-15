@@ -1,6 +1,10 @@
 import numpy as np 
 
-def exponential_forgetting(skill, time, forgetting_rate=0.2):
+###########################################################################
+ ###################### 1. Basic Forgetting Classes ######################
+###########################################################################
+
+class exponential_forgetting:
     """
     Standard exponential forgetting. 
     Inputs:
@@ -8,21 +12,33 @@ def exponential_forgetting(skill, time, forgetting_rate=0.2):
     Outputs:
     current skill after forgetting
     """
-    return skill * np.exp(-forgetting_rate * time)
+    def __init__(self, forgetting_rate=0.2):
+        self.forgetting_rate = forgetting_rate
+        
+    def calculate(self, skill, time):
+        final_skill = skill*np.exp(-self.forgetting_rate*time)
+        return final_skill
 
-
-def power_forgetting(skill, time, forgetting_rate=0.2):
+class power_forgetting:
     """
     Standard Power forgetting.
     Inputs:
     skill (starting skill), time (elapsed time), forgetting_rate
     Outputs:
     current skill after forgetting
-    """
-    return skill/(1+time)**forgetting_rate
+    """    
+    def __init__(self, forgetting_rate=0.2):
+        self.forgetting_rate = forgetting_rate
+    
+    def calculate(self, skill, time):
+        final_skill = skill/(1+time)**self.forgetting_rate
+        return final_skill
 
+###########################################################################
+ ###################### 2. Advanced Forgetting Classes ######################
+###########################################################################
 
-
+############ HELPER FUNCTIONS ############
 def forgetting_rate_decreasing(beta_min, beta_max, n_practice, delta=0.1): 
     """
     CHANGING FORGETTING RATES WITH NUMBER OF PRACTICE EVENTS:
@@ -39,7 +55,5 @@ def forgetting_rate_decreasing(beta_min, beta_max, n_practice, delta=0.1):
     """
     return beta_min + (beta_max - beta_min)*np.exp(-delta*n_practice)
 
-
-#def forgetting_rate_spaced()
 
 
