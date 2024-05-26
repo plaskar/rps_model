@@ -1,3 +1,17 @@
+import numpy as np
+#import seaborn as sns
+import matplotlib.pyplot as plt
+
+
+
+###########################################################################
+ ###################### 0. Alias ######################
+###########################################################################
+
+
+    
+
+
 
 ###########################################################################
  ###################### 1. Concave Learning Curves ######################
@@ -19,6 +33,7 @@ class exponential_learning:
     def updated_skill(self, skill):
         new_skill = skill + self.alpha*(1 - skill/self.skill_max)
         return new_skill
+
     
 
 class power_learning:
@@ -91,10 +106,90 @@ class richards_learning:
         self.alpha = alpha
         self.nu = 1
         self.skill_max = skill_max
+     
+    def impact_func(self, skill):
+        return (self.alpha*self.c) * ((skill/self.skill_max)**(1 - 1/self.c)) * (1 - (skill/self.skill_max)**(1/self.c))
+
     
     def updated_skill(self, skill):
         new_skill = skill + self.alpha*skill*(1 - (skill/self.skill_max)**nu )
         return new_skill
+    
+    # returns inflection point:
+    def inflec_pt(self):
+        infl = (1/(1+self.nu))**(1/self.nu)
+        return infl
+
+    def plot_impact(self, x_points=np.linspace(0, 1, 201), save_location=False):
+        y_points = self.impact_func(x_points)
+
+        # Make and optionally save plot:
+        plt.figure(figsize=(8,6))
+        plt.plot(x_points, y_points, color='red', lw=2)
+        plt.xlabel('Skill', fontsize=16)
+        plt.ylabel('Impact of Practice', fontsize=16)
+        if save_location != False:
+            plt.savefig(save_location, dpi=512)
+        plt.show()
+
+class compound_exp_learning:
+    """
+    Compound Exponential learning curves as described in Murre 2014. Rate of skill increase using
+    (default skill_max=1) is:
+                dS/dt = (alpha*c) * (S^(1-1/c)) * (1-S^(1/c))
+    
+    This, like Richard's Curves, it also gives a family of S-shaped curves. Parameter c (>=1) controls the 
+    inflection point. c=1 gives back the concave exponential curve. Very large c shifts inflection point 
+    upwards towards 1/e = 0.37 (approx.) as c approaches +infinity.
+    
+    Parameters:
+        alpha = learning rate
+        c = complexity of task (always >= 1, Default=2). When c=1, we get the concave exponential curve. 
+        skill_max = maximum skill (=1 by default)
+    """
+
+    def __init__(self, alpha=0.2, c=1, skill_max=1):
+        self.alpha = alpha
+        self.c = c
+        self.skill_max = 1
+
+    def impact_func(self, skill):
+        return (self.alpha*self.c) * ((skill/self.skill_max)**(1 - 1/self.c)) * (1 - (skill/self.skill_max)**(1/self.c))
+    
+    def updated_skill(self, skill):
+        new_skill = skill + self.impact_func(skill)
+        return new_skill
+
+    # returns inflection point:
+    def inflec_pt(self):
+        infl = (1 - 1/self.c)**(self.c)
+        return infl
+
+
+    
+    def plot_impact(self, x_points=np.linspace(0, 1, 201), save_location=False):
+        y_points = self.impact_func(x_points)
+
+        # Make and optionally save plot:
+        plt.figure(figsize=(8,6))
+        plt.plot(x_points, y_points, color='red', lw=2)
+        plt.xlabel('Skill', fontsize=16)
+        plt.ylabel('Impact of Practice', fontsize=16)
+        if save_location != False:
+            plt.savefig(save_location, dpi=512)
+        plt.show()
+
+
+    # match alpha for provided c2, so that area under impact function
+    # remains same as in initialized model
+    def match_alpha(self, c2): 
+        alpha2 = self.alpha*((2*c2-1)/(2*self.c-1))*(self.c/c2)
+        return alpha2
+    
+    
+        
+        
+
 
     
 

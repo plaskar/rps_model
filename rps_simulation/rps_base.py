@@ -1,5 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
+import seaborn as sns
+import pandas as pd
 
 from rps_simulation.learning_curves import exponential_learning
 from rps_simulation.forgetting_curves import exponential_forgetting 
@@ -8,12 +10,13 @@ from rps_simulation.waiting_times import exponential_waiting_time
 
 
 ##############################################################################
-### 1. RPS_Basic Class runs one instant of the model, giving the learning trajectory
+#    1. RPS_Basic Class runs one instant of the basic RPS model,
+#       giving the learning trajectory
 ##############################################################################
+
 class RPS_Basic:
     """
-    The Basic RPS Model Class makes one run of the model. 
-    
+    The Basic RPS Model Class makes one run of the model. poetry
     * It has a fixed forgetting rate, fixed learning rate. 
     
     * Users have to specify:
@@ -30,9 +33,9 @@ class RPS_Basic:
     """
     
     def __init__(self, 
-                 learning_func=exponential_learning, # by default, we have exponential update s_new = s_old + alpha*(1-s_old) 
-                 forgetting_func=exponential_forgetting, # default is exponential forgetting
-                 practice_rate_func=simple_linear_rate, # default is simple_linear_rate 
+                 learning_func=exponential_learning(), # by default, we have exponential update s_new = s_old + alpha*(1-s_old) 
+                 forgetting_func=exponential_forgetting(), # default is exponential forgetting
+                 practice_rate_func=simple_linear_rate(), # default is simple_linear_rate 
                  waiting_time_dist = exponential_waiting_time, # default is exponential (NOT Pareto) waiting times 
                  initial_skill=0.1, initial_practice_rate=1, max_time=100):
 
@@ -105,7 +108,7 @@ class RPS_Basic:
 
         return self
 
-    # Returns data from the simulation-run
+    # Returns dictionary of data from the simulation-run
     def data(self): 
         # Constructing summary attributes dictionary to return
         summary_attributes = {'final_skill': self.final_skill,
@@ -166,8 +169,8 @@ class RPS_Basic:
                 # If the time gap is less than or equal to the least count, use fixed n_points
                 times = np.linspace(start_time, end_time, min_points, endpoint=False)
             else:
-                # Otherwise, divide the gap by the least_count to determine the number of points. Min. min_points are added
-                points_count = min(int(time_gap / least_count), min_points)  # Ensure at least min_points interpolated points
+                # Otherwise, divide the gap by the least_count to determine the number of points. At least min_points are added
+                points_count = max(int(time_gap / least_count), min_points)  # Ensure at least min_points interpolated points
                 times = np.linspace(start_time, end_time, points_count, endpoint=False)
             
             for t in times[:-1]:  # Exclude the last point to prevent overlap
@@ -290,7 +293,7 @@ class RPS_Basic_Multirun:
     def plot_trajectory_and_histogram(self, colour_lineplots='Black', colour_histogram='Blue', n_plots=100, n_bins=50, save_location=False):
         # Create figure and axis objects
         fig = plt.figure(figsize=(10, 6))
-        grid = plt.GridSpec(1, 2, width_ratios=[2, 1])  # 4:1 ratio for grid width
+        grid = plt.GridSpec(1, 2, width_ratios=[2, 1])  # 2:1 ratio for grid width
         
         # Plotting the skill trajectories of first n_plots learners
         ax1 = fig.add_subplot(grid[0])
@@ -298,8 +301,8 @@ class RPS_Basic_Multirun:
             ax1.plot(prac_times, skill_level, '-', linewidth=0.5, alpha=0.7, color=colour_lineplots)  # Plot each trajectory
         ax1.set_xlim(0, max([max(time) for time in self.all_practice_times]))  # Set x-axis limit based on maximum time
         ax1.set_ylim(0, 1)
-        ax1.set_xlabel('Time', fontsize=19)
-        ax1.set_ylabel('Skill',  fontsize=19)
+        ax1.set_xlabel('Time', fontsize=22)
+        ax1.set_ylabel('Skill',  fontsize=22)
         
         # Creating the histogram on the right
         ax2 = fig.add_subplot(grid[1])
@@ -317,5 +320,63 @@ class RPS_Basic_Multirun:
         plt.show()
         
 
-    
+
+    def plot_summary_cogsci(self, colour_lineplots='Black', colour_histogram='Blue', n_plots=100, n_bins=50, save_location=False, bw_adjust=1):
+        # make dataframe from list of final skills; makes it easier to make the histogram using seaborn
+        df_finalS = pd.DataFrame(self.final_skills, columns=['final_skills'])
+        
+        # Create Figure and Subplots
+        fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(12, 6), gridspec_kw={'width_ratios': [2, 1]})
+
+        # Plotting the skill trajectories of first n_plots learners
+        for skill_level, prac_times in zip(self.interpolated_skills[:n_plots], self.interpolated_prac_times[:n_plots]):
+            ax1.plot(prac_times, skill_level, '-', linewidth=0.5, alpha=0.7, color=colour_lineplots)  # Plot each trajectory
+        ax1.set_title('Learning Trajectories', fontsize=20)
+        ax1.set_xlim(0, max([max(time) for time in self.all_practice_times]))  # Set x-axis limit based on maximum time
+        ax1.set_ylim(0, 1)
+        ax1.set_xlabel('Time', fontsize=22)
+        ax1.set_ylabel('Skill',  fontsize=22)
+        
+        
+        # Creating the histogram on the right using seaborn
+        sns.kdeplot(df_finalS, ax=ax2, y='final_skills', color=colour_histogram, alpha=0.7, fill=True, bw_adjust=bw_adjust)
+        ax2.set_title('Distribution of Final Skills', fontsize=16)
+        #ax2.set_ylabel('Final Skill', fontsize=20)  # Label for what was previously the x-axis
+        #ax2.set_xlabel('Density', fontsize=22, labelpad=10)  # Label for what was previously the y-axis
+        ax2.set_xlabel('')
+        ax2.set_ylabel('Skill', fontsize=22)
+        ax2.set_xticks([])
+        ax2.set_ylim(ax1.get_ylim())  # Match y-limits to line plot y-axis
+        
+        ax2.yaxis.tick_right()  # Move y-axis ticks to the right
+        ax2.yaxis.set_label_position("right")  # Move y-axis label to the right
+
+        
+        plt.tight_layout()  # Adjust layout to fit
+        if save_location != False:
+            plt.savefig(save_location, dpi=512)
+        plt.show()        
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
