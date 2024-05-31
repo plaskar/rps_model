@@ -5,7 +5,7 @@ import pandas as pd
 
 from rps_simulation.learning_curves import exponential_learning
 from rps_simulation.forgetting_curves import exponential_forgetting 
-from rps_simulation.practice_rate import simple_linear_rate
+from rps_simulation.practice_rate import simple_linear_rate, tmt_hyperbolic_rate
 from rps_simulation.waiting_times import exponential_waiting_time 
 
 
@@ -33,12 +33,21 @@ class RPS_Basic:
     """
     
     def __init__(self, 
-                 learning_func=exponential_learning(), # by default, we have exponential update s_new = s_old + alpha*(1-s_old) 
-                 forgetting_func=exponential_forgetting(), # default is exponential forgetting
-                 practice_rate_func=simple_linear_rate(), # default is simple_linear_rate 
+                 learning_func = exponential_learning(), # by default, we have exponential update s_new = s_old + alpha*(1-s_old) 
+                 forgetting_func = exponential_forgetting(), # default is exponential forgetting
+                 practice_rate_func = simple_linear_rate(), # default is simple_linear_rate 
                  waiting_time_dist = exponential_waiting_time, # default is exponential (NOT Pareto) waiting times 
+                 
+                 ## Optionally add dictionary with deadlines, weights and tmt_effect function:
+                 deadline_dict = {'deadlines': None, # if None then no deadlines, else add list of deadlines timings e.g. [33, 67, 100]
+                                  'deadline_weights': None,  # If deadlines is not None, you can optionally add list of their weights,
+                                          # e.g. [10, 10, 20] for 2 quizzes and a more important end-sem exam.
+                                  'tmt_effect': None # assign tmt_effect class, e.g. tmt_hyperbolic_rate
+                                 },
+                 
+                 ## Initial conditions and time-range:
                  initial_skill=0.1, initial_practice_rate=1, max_time=100):
-
+        
         ## parameters of the RPS_Basic class:
         self.waiting_time_dist = waiting_time_dist
         self.learning_func = learning_func
@@ -49,11 +58,16 @@ class RPS_Basic:
         self.initial_skill = initial_skill
         self.initial_practice_rate = initial_practice_rate
         self.max_time = max_time
+
+        # Deadlines (optional):
+        self.deadlines = deadline_dict['deadlines']
+        self.deadline_weights = deadline_dict['deadline_weights']
+        self.tmt_effect = deadline_dict['tmt_effect']
         
         # Initialize empty lists for simulation results
-        self.practice_times = []
-        self.skill_levels = []
-        self.practice_rates = []
+        self.practice_times = [] # looks like [0, t1, t2...tn, max_time]
+        self.skill_levels = [] # looks like [initial_skill, s1, ..., sn, s_final]
+        self.practice_rates = [] # looks like [ lambda_0, lambda_1,....lambda_n, lambda_final]
             
         # Summary attributes: 
         self.final_skill = None # final skill at t = max_time, the end of the time-window
@@ -94,12 +108,16 @@ class RPS_Basic:
             skill_after_prac = self.learning_func.updated_skill(skill_before_prac)
             
             # Calculate practice rate for next practice event
-            next_practice_rate = self.practice_rate_func.calculate(self.skill_levels)
+            next_practice_rate = self.practice_rate_func.calculate(skill_history = [self.skill_levels, skill_after_prac])
+            if self.deadlines is not None: # add deadline-effect, if they exist
+                deadline_effect = self.tmt_effect.calculate(self.deadlines, self.deadline_weights, current_time, [self.skill_levels, skill_after_prac])
+                next_practice_rate += deadline_effect # adding effect of deadline
             
+            # Add skill, prac-event time and prac-rate to data
+            self.skill_levels.append(skill_after_prac) 
             self.practice_times.append(next_prac_time)
-            self.skill_levels.append(skill_after_prac)
             self.practice_rates.append(next_practice_rate)
-
+            
         ## Filling up Summary Attributes
         self.final_skill = self.skill_levels[-1]
         self.final_practice_rate = self.practice_rates[-1]
@@ -125,7 +143,6 @@ class RPS_Basic:
         """plot simple learning trajectory without the forgetting-bits:"""
         plt.figure(figsize=(10, 6))
         plt.plot(self.practice_times, self.skill_levels, marker='o', linestyle='-', color='#FF6B6B')
-        #plt.plot(interpolated_practice_times, interpolated_skill_levels, linestyle='-', color='Black')
         plt.title('Simple Learning Trajectory', fontsize=22)
         plt.xlabel('Practice Time', fontsize=19)
         plt.ylabel('Skill Level', fontsize=19)
@@ -223,18 +240,25 @@ class RPS_Basic_Multirun:
     Multiple Runs of the RPS_Basic class.
     """
     def __init__(self, waiting_time_dist, learning_func, forgetting_func, practice_rate_func, 
+                 deadline_dict = {'deadlines': None, 'deadline_weights': None, 'tmt_effect': None},
                  n_sims=1000, initial_skill=0.1, initial_practice_rate=1, max_time=100):
+        
         # Class Attributes:
         self.waiting_time_dist = waiting_time_dist
         self.learning_func = learning_func
         self.forgetting_func = forgetting_func
         self.practice_rate_func = practice_rate_func
-        
+
+        # hyperparameters
         self.n_sims = n_sims  # Number of simulations to run
         self.initial_skill = initial_skill
         self.initial_practice_rate = initial_practice_rate
         self.max_time = max_time
-        #self.forgetting_rate = forgetting_rate
+
+        # Deadlines (optional):
+        self.deadlines = deadline_dict['deadlines']
+        self.deadline_weights = deadline_dict['deadline_weights']
+        self.tmt_effect = deadline_dict['tmt_effect']
         
         # Summary Data from all Runs:
         self.final_skills = []  # To store final skill levels from all sims
@@ -250,6 +274,7 @@ class RPS_Basic_Multirun:
         for _ in range(self.n_sims):
             model = RPS_Basic(waiting_time_dist=self.waiting_time_dist, learning_func=self.learning_func,
                               forgetting_func=self.forgetting_func, practice_rate_func=self.practice_rate_func,
+                              deadline_dict = {'deadlines': self.deadlines, 'deadline_weights': self.deadline_weights, 'tmt_effect': self.tmt_effect},
                               initial_skill=self.initial_skill, initial_practice_rate=self.initial_practice_rate, max_time=self.max_time)
             model.run_simulation()
             
@@ -303,7 +328,13 @@ class RPS_Basic_Multirun:
         ax1.set_ylim(0, 1)
         ax1.set_xlabel('Time', fontsize=22)
         ax1.set_ylabel('Skill',  fontsize=22)
-        
+
+        # Adding deadlines to the plot, if they exist:
+        if self.deadlines is not None:
+            normalized_weights = [float(i)/max(self.deadline_weights) for i in self.deadline_weights] 
+            for deadline, weight in zip(self.deadlines, normalized_weights):
+                ax1.axvline(x=deadline, ymin=0, ymax=weight, color='black', alpha=0.5, linestyle='--')
+            
         # Creating the histogram on the right
         ax2 = fig.add_subplot(grid[1])
         ax2.hist(self.final_skills, bins=[i/n_bins for i in range(n_bins+1)], density=True, orientation='horizontal', color=colour_histogram, linewidth=0.5)
@@ -336,6 +367,12 @@ class RPS_Basic_Multirun:
         ax1.set_ylim(0, 1)
         ax1.set_xlabel('Time', fontsize=22)
         ax1.set_ylabel('Skill',  fontsize=22)
+
+        # Adding deadlines to the plot, if they exist:
+        if self.deadlines is not None:
+            normalized_weights = [float(i)/max(self.deadline_weights) for i in self.deadline_weights] 
+            for deadline, weight in zip(self.deadlines, normalized_weights):
+                ax1.axvline(x=deadline, ymin=0, ymax=weight, color='black', alpha=0.5, linestyle='-', lw=1)
         
         
         # Creating the histogram on the right using seaborn

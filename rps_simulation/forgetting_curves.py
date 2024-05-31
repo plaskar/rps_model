@@ -4,7 +4,6 @@ import numpy as np
 ###########################################################################
  ###################### 1. Basic Forgetting Classes ######################
 ###########################################################################
-
 class exponential_forgetting:
     """
     Standard exponential forgetting. 
@@ -18,11 +17,15 @@ class exponential_forgetting:
     def __init__(self, forgetting_rate=0.2, Smin = 0):
         self.forgetting_rate = forgetting_rate
         self.Smin = Smin
-        
+    
     # Calculates S(t), given starting skill and time(t):
     def calculate(self, skill, time):
         final_skill = self.Smin + (skill - self.Smin)*np.exp(-self.forgetting_rate*time)
         return final_skill
+
+    # allows updating the forgettin rate, needed to incorporate spacing
+    def update_rate(self, new_rate):
+        self.forgetting_rate = new_rate
 
 class power_forgetting:
     """
@@ -39,10 +42,12 @@ class power_forgetting:
         final_skill = skill/(1+time)**self.forgetting_rate
         return final_skill
 
+    def update_rate(self, new_rate):
+        self.forgetting_rate = new_rate
+
 ###########################################################################
  ###################### 2. Advanced Forgetting Classes ######################
 ###########################################################################
-
 class spacing_effect:
     """
     THIS CLASS CALCULATES FORGETTING RATE BASED ON HISTORY OF WAIT TIMES:
@@ -69,18 +74,12 @@ class spacing_effect:
 
         Returns: beta_current, the calculated forgetting rate till next practice-event
         """
-        tmp_exponent = self.e*np.sum(np.array(wait_times)**s)
+        tmp_exponent = -self.e*np.sum(np.array(wait_times)**self.s)
         beta_current = self.beta_min + (self.beta_max - self.beta_min)*np.exp(tmp_exponent)
 
         return beta_current
         
         
-        
-
-
-
-
-
 
 ############ HELPER FUNCTIONS ############
 def forgetting_rate_decreasing(beta_min, beta_max, n_practice, delta=0.1): 

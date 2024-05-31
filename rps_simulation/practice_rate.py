@@ -103,7 +103,34 @@ class general_linear_rate:
         return practice_rate
 
 
+###########################################################################
+ #################### 2. ADDING EFFECT OF DEADLINES (TMT) #################
+###########################################################################
 
+class tmt_hyperbolic_rate:
+    def __init__(self, impulsivity=1):
+        self.impulsivity = impulsivity
+
+    def calculate(self, deadlines, deadline_weights, curr_time, skill_hist):
+        deadlines_left = [t for t in deadlines if t > curr_time]
+
+        # if no deadlines left, no additive effect of deadlines
+        if len(deadlines_left) == 0: 
+            return 0
+        else: # at least 1 deadline left
+            next_deadline = min(deadlines_left) # time of next deadline
+            next_wgt = deadline_weights[deadlines.index(next_deadline)] # weight of next deadline
+
+            # calculate and return increased prac. rate due to deadline (tmt_effect)
+            tmt_effect = (skill_hist[-1]*next_wgt)/(1 + self.impulsivity*(next_deadline - curr_time))
+            
+            return tmt_effect
+            
+        
+        
+        
+        
+        
 
     
 

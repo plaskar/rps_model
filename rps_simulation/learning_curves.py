@@ -112,7 +112,7 @@ class richards_learning:
 
     
     def updated_skill(self, skill):
-        new_skill = skill + self.alpha*skill*(1 - (skill/self.skill_max)**nu )
+        new_skill = skill + self.alpha*skill*(1 - (skill/self.skill_max)**self.nu )
         return new_skill
     
     # returns inflection point:
@@ -154,7 +154,8 @@ class compound_exp_learning:
         self.skill_max = 1
 
     def impact_func(self, skill):
-        return (self.alpha*self.c) * ((skill/self.skill_max)**(1 - 1/self.c)) * (1 - (skill/self.skill_max)**(1/self.c))
+        #return (self.alpha*self.c) * ((skill/self.skill_max)**(1 - 1/self.c)) * (1 - (skill/self.skill_max)**(1/self.c))
+        return (self.alpha) * ((skill/self.skill_max)**(1 - 1/self.c)) * (1 - (skill/self.skill_max)**(1/self.c))
     
     def updated_skill(self, skill):
         new_skill = skill + self.impact_func(skill)
