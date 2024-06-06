@@ -23,8 +23,8 @@ class exponential_forgetting:
         final_skill = self.Smin + (skill - self.Smin)*np.exp(-self.forgetting_rate*time)
         return final_skill
 
-    # allows updating the forgettin rate, needed to incorporate spacing
-    def update_rate(self, new_rate):
+    # allows updating/setting the forgettin rate, needed to incorporate spacing
+    def set_rate(self, new_rate):
         self.forgetting_rate = new_rate
 
 class power_forgetting:
@@ -42,7 +42,7 @@ class power_forgetting:
         final_skill = skill/(1+time)**self.forgetting_rate
         return final_skill
 
-    def update_rate(self, new_rate):
+    def set_rate(self, new_rate):
         self.forgetting_rate = new_rate
 
 ###########################################################################
@@ -52,24 +52,24 @@ class spacing_effect:
     """
     THIS CLASS CALCULATES FORGETTING RATE BASED ON HISTORY OF WAIT TIMES:
 
-    * beta_min -- min. forgetting rate
-    * beta_max -- maximum forgetting rate
-    * e -- controls how fast forgetting rate decays. Must be >= 0. 
+    * beta_min = min. forgetting rate
+    * beta_max = maximum/starting forgetting rate
+    * e = controls how fast forgetting rate decays. Must be >= 0. 
             e=0 means constant forgetting rate (=beta_max)
-    * s -- controls non-linearity of spacing effect. (s between 0 and 1)
+    * s = controls non-linearity of spacing effect. (s between 0 and 1)
             s=0 means forgetting rate only decays based on number of
             practice events in the past. 
     """
     def __init__(self, beta_min=0.01, beta_max=0.2, e=1, s=1):
         self.beta_min = beta_min # min. forgetting rate
-        self.beta_max = beta_max # max. forgetting rate
+        self.beta_max = beta_max # max. forgetting rate, equals starting forgetting rate
         self.e = e # controls how rate of beta (forgetting rate) decay. Higher is faster.
         self.s = s #  s=0 means only number of practice events counts. s=1 linear
 
     
     def calc_forgetting_rate(self, wait_times):
         """
-        wait_times is 1D array or list of length n (>=1) which 
+        wait_times is 1D array or list of length n (>=0, possibly empty) which 
         contains sequence of spacings from 1st to (n+1)-th practice events.
 
         Returns: beta_current, the calculated forgetting rate till next practice-event
@@ -78,7 +78,12 @@ class spacing_effect:
         beta_current = self.beta_min + (self.beta_max - self.beta_min)*np.exp(tmp_exponent)
 
         return beta_current
-        
+
+    def set_beta_max(self, beta_max_new):
+        """
+        Useful to update starting beta_max (forgetting-rate) 
+        """
+        self.beta_max = beta_max_new
         
 
 ############ HELPER FUNCTIONS ############

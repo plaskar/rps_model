@@ -20,12 +20,20 @@ class RPS_Basic:
     * It has a fixed forgetting rate, fixed learning rate. 
     
     * Users have to specify:
-        1. "waiting_time_dist": the waiting time distribution
-        2. "learning_func": this should tell us how to update the skill, based on current skill
-        3. "forgetting_func": the forgetting function - exponential, power or something else. 
+        1. "waiting_time_dist": The waiting time distribution
+        2. "learning_func": This should tell us how to update the skill, based on current skill
+        3. "forgetting_func": The forgetting function - exponential, power or something else. 
             It will use the forgetting_rate which is fixed
         4. "practice_rate_func": This should provide a positive practice rate (which controls wiating time)
-    
+
+    * Users may -Optionally- specify:
+        1. "deadline_dict": A dictionary specifyig timings of deadlines, their weights (subjective importance)
+            and a temporal-motivation-theory (tmt) effect function. See __init__ for more detials.
+            
+        2. "spacing_func": The functional form of the spacing effect. It will update forgetting_rate after each
+            practive event (except the first practice-event), based on time-lags and hyperparameters. 
+            Default is None. 
+                    
     * The practice function takes as input the skill_levels history so far and generates an output practice rate
     For the basic model, this is simply rate = a + b*skill_level[-1]
     
@@ -45,6 +53,9 @@ class RPS_Basic:
                                   'tmt_effect': None # assign tmt_effect class, e.g. tmt_hyperbolic_rate
                                  },
                  
+                 ## Optionally set the spacing function (Default is no spacing) 
+                 spacing_func = None,  
+                 
                  ## Initial conditions and time-range:
                  initial_skill=0.1, initial_practice_rate=1, max_time=100):
         
@@ -54,26 +65,37 @@ class RPS_Basic:
         self.forgetting_func = forgetting_func
         self.practice_rate_func = practice_rate_func
 
-        # starting values and time_window
-        self.initial_skill = initial_skill
-        self.initial_practice_rate = initial_practice_rate
-        self.max_time = max_time
-
         # Deadlines (optional):
         self.deadlines = deadline_dict['deadlines']
         self.deadline_weights = deadline_dict['deadline_weights']
         self.tmt_effect = deadline_dict['tmt_effect']
         
+
+        # Spacing Effect (optional):
+        self.spacing_func = spacing_func # By default = None 
+        if spacing_func is not None:
+            # set beta_max = starting forgetting rate
+            self.spacing_func.set_beta_max(self.forgetting_func.forgetting_rate) 
+        
+        # ------- Data ------------
+        # starting values and time_window
+        self.initial_skill = initial_skill
+        self.initial_practice_rate = initial_practice_rate
+        self.max_time = max_time
+        
         # Initialize empty lists for simulation results
         self.practice_times = [] # looks like [0, t1, t2...tn, max_time]
         self.skill_levels = [] # looks like [initial_skill, s1, ..., sn, s_final]
         self.practice_rates = [] # looks like [ lambda_0, lambda_1,....lambda_n, lambda_final]
+        self.time_lags = [] # list of time_lags between practice events. Length = (# of practice_events) - 1
+        self.forgetting_rates = [] # list of forgetting_rates after each practice event. Useful if 'spacing' is not None
             
         # Summary attributes: 
         self.final_skill = None # final skill at t = max_time, the end of the time-window
         self.final_practice_rate = None # final_practice_rate = practice_rate
         self.total_practice_events = None # total practice events during the run
-        self.time_lags = [] # list of time_lags between practice events. Length = (# of practice_events) - 1
+        
+                            
         
 
     # Generates the run_data = which includes practice_times, skill_levels and practice_rates attributes of the class
@@ -81,6 +103,9 @@ class RPS_Basic:
         self.practice_times = [0]
         self.skill_levels = [self.initial_skill]
         self.practice_rates = [self.initial_practice_rate]
+        self.time_lags = [] # only filled when 2 or more practice-events (PEs) have occured
+        self.forgetting_rates = []  # only filled when 1 or more PEs have occured
+        
         
         while self.practice_times[-1] < self.max_time:
             current_time = self.practice_times[-1]
@@ -109,7 +134,9 @@ class RPS_Basic:
             
             # Calculate practice rate for next practice event
             next_practice_rate = self.practice_rate_func.calculate(skill_history = [self.skill_levels, skill_after_prac])
-            if self.deadlines is not None: # add deadline-effect, if they exist
+            
+            # add deadline-effect to update practice-rate (optinal) if not None
+            if self.deadlines is not None: 
                 deadline_effect = self.tmt_effect.calculate(self.deadlines, self.deadline_weights, current_time, [self.skill_levels, skill_after_prac])
                 next_practice_rate += deadline_effect # adding effect of deadline
             
@@ -118,29 +145,48 @@ class RPS_Basic:
             self.practice_times.append(next_prac_time)
             self.practice_rates.append(next_practice_rate)
             
-        ## Filling up Summary Attributes
+            # Fill up time_lags and forgetting-rates list:
+            if len(self.practice_times) >= 3: # at least 2 practice-events have occured:
+                self.time_lags.append(self.practice_times[-1] - self.practice_times[-2])
+
+            # Fill up forgetting_rates lists:
+            if self.spacing_func is None: # no spacing
+                self.forgetting_rates.append(self.forgetting_func.forgetting_rate) # forgetting rate stays constant throughout
+            else: # spacing_func is not None
+                if len(self.practice_times)==2: # first PE just occured:
+                    self.forgetting_rates.append(self.forgetting_func.forgetting_rate)
+                else: # more than 1 PE
+                    next_forgetting_rate = self.spacing_func.calc_forgetting_rate(wait_times=self.time_lags)
+                    self.forgetting_rates.append(next_forgetting_rate)
+        
+        ## Filling up Simulation Data
         self.final_skill = self.skill_levels[-1]
         self.final_practice_rate = self.practice_rates[-1]
         self.total_practice_events = len(self.practice_times) - 2
-        self.time_lags = [ self.practice_times[i+1] - self.practice_times[i] for i in range(1,self.total_practice_events) ]
 
         return self
 
     # Returns dictionary of data from the simulation-run
     def data(self): 
-        # Constructing summary attributes dictionary to return
+        """Constructing summary attributes dictionary to return"""
         summary_attributes = {'final_skill': self.final_skill,
                               'final_practice_rate': self.final_practice_rate,
                               'total_practice_events': self.total_practice_events,
                               'time_lags': self.time_lags,
+                              'forgetting_rates': self.forgetting_rates,
                               'practice_times': self.practice_times,
                               'skill_levels': self.skill_levels,
                               'practice_rates': self.practice_rates
                              }
+        
         return summary_attributes
 
+    
     def plot_simple_trajectory(self):
-        """plot simple learning trajectory without the forgetting-bits:"""
+        """
+        plot simple learning trajectory without the smoothed forgetting curve. 
+        Skill at consecutive practice-events are joined by straight lines
+        """
         plt.figure(figsize=(10, 6))
         plt.plot(self.practice_times, self.skill_levels, marker='o', linestyle='-', color='#FF6B6B')
         plt.title('Simple Learning Trajectory', fontsize=22)
@@ -204,9 +250,8 @@ class RPS_Basic:
         return int_practice_times, int_skill_levels
     
     
-    # Plots a smoothed learning trajectory including the forgetting curves interpolated  between practice-events
     def plot_learning_trajectory(self, least_count=0.01, min_points=10):
-        """Plots the cute learning trajectory, including the forgetting phase"""
+        """Plots a smoothed learning trajectory including the forgetting curves interpolated  between practice-events"""
         interpolated_practice_times, interpolated_skill_levels = self.interpolate_learning_trajectory_dynamic(least_count, min_points)
         
         plt.figure(figsize=(10, 6))
@@ -218,15 +263,27 @@ class RPS_Basic:
         plt.grid(True, alpha=1)
         plt.show()
     
-    # Plots practice_times_plot - each vertical line corresponds to a practice-event
-    def practice_times_plot(self):
-        """Plot practice times as vertical lines."""
+
+    def practice_times_plot(self, color='black', lw=1):
+        """Plot practice_times as vertical lines to visually show when practice events occur"""
         plt.figure(figsize=(10, 2))  # Wide and not too high
         for prac_time in self.practice_times[1:-1]:  # Excluding the first and last elements
-            plt.axvline(x=prac_time, color='black', linestyle='-', linewidth=2)
+            plt.axvline(x=prac_time, color=color, linestyle='-', linewidth=lw)
         plt.title('Practice Times', fontsize=22)
         plt.xlabel('Time', fontsize=18)
         plt.yticks([])  # Hide y-axis ticks
+        plt.tight_layout()
+        plt.show()
+
+    def practice_event_plot(self, color='black', lw=2):
+        """Plot of the counting process associated with practice-events"""
+        counts = [ i for i in range(1, len(self.practice_times)-1)] # y-axis values
+        
+        plt.figure(figsize=(10, 2))  # Wide and not too high
+        plt.step(x=self.practice_times[1:-1], y=counts, color=color, linewidth=lw)
+        plt.title('Practice Times', fontsize=22)
+        plt.xlabel('Time', fontsize=18)
+        #plt.yticks([])  # Hide y-axis ticks
         plt.tight_layout()
         plt.show()
 
@@ -235,12 +292,17 @@ class RPS_Basic:
 ##############################################################################
 ### 2. Class to have multiple runs of the basic model
 ##############################################################################
+
 class RPS_Basic_Multirun:
     """
-    Multiple Runs of the RPS_Basic class.
+    Multiple Runs of the RPS_Basic class and store useful statistics about the simulation.
+    Also allows plotting trajectories and final skill histograms, etc. to test how different
+    learning and forgetting curves, deadlines, spacings etc. affect results. 
+    This class is needed also to perform sensitivity analysis.
     """
     def __init__(self, waiting_time_dist, learning_func, forgetting_func, practice_rate_func, 
                  deadline_dict = {'deadlines': None, 'deadline_weights': None, 'tmt_effect': None},
+                 spacing_func = None,
                  n_sims=1000, initial_skill=0.1, initial_practice_rate=1, max_time=100):
         
         # Class Attributes:
@@ -259,13 +321,22 @@ class RPS_Basic_Multirun:
         self.deadlines = deadline_dict['deadlines']
         self.deadline_weights = deadline_dict['deadline_weights']
         self.tmt_effect = deadline_dict['tmt_effect']
+
+        # Spacing Effect (optional):
+        self.spacing_func = spacing_func # By default = None 
+        if spacing_func is not None:
+            # set beta_max = starting forgetting rate
+            self.spacing_func.set_beta_max(self.forgetting_func.forgetting_rate) 
         
         # Summary Data from all Runs:
         self.final_skills = []  # To store final skill levels from all sims
-        self.practice_events_counts = []  # To store the number of practice events from all sims
+        self.total_practice_events = []  # To store the number of practice events from all sims
+        
         self.all_skill_levels = [] # list of lists, contains skill_levels for each simulation run
         self.all_practice_times = [] # contains practice_time list for each simulation run
         self.all_practice_rates = [] # contains practice_time list for each simulation run
+        self.all_time_lags = [] # contains time_lag list for each sim run
+        self.all_forgetting_rates = [] # ditto for forgetting_rate for each sim run
         
         self.interpolated_skills = []
         self.interpolated_prac_times = []
@@ -275,17 +346,22 @@ class RPS_Basic_Multirun:
             model = RPS_Basic(waiting_time_dist=self.waiting_time_dist, learning_func=self.learning_func,
                               forgetting_func=self.forgetting_func, practice_rate_func=self.practice_rate_func,
                               deadline_dict = {'deadlines': self.deadlines, 'deadline_weights': self.deadline_weights, 'tmt_effect': self.tmt_effect},
+                              spacing_func = self.spacing_func,
                               initial_skill=self.initial_skill, initial_practice_rate=self.initial_practice_rate, max_time=self.max_time)
-            model.run_simulation()
+            model.run_simulation() # run one instance of simulation
             
             # interpolating skills in-between practice events for smooth plots
             interpolated_practice_times, interpolated_skill_levels = model.interpolate_learning_trajectory_dynamic(least_count=0.01, min_points=10)
 
             # adding data from current sim
             self.final_skills.append(model.final_skill)
-            self.practice_events_counts.append(model.total_practice_events)
+            self.total_practice_events.append(model.total_practice_events)
             self.all_skill_levels.append(model.skill_levels)
             self.all_practice_times.append(model.practice_times)
+            self.all_time_lags.append(model.time_lags)
+            self.all_forgetting_rates.append(model.forgetting_rates)
+            
+            # interpolated data:
             self.interpolated_prac_times.append(interpolated_practice_times)
             self.interpolated_skills.append(interpolated_skill_levels)
     
@@ -305,7 +381,7 @@ class RPS_Basic_Multirun:
     
     def plot_practice_events_histogram(self, colour='blue', n_bins=50, save_location=False):
         plt.figure(figsize=(10, 6))
-        plt.hist(self.practice_events_counts, bins=[i/n_bins for i in range(n_bins+1)], color=colour, edgecolor='black')
+        plt.hist(self.total_practice_events, bins=[i/n_bins for i in range(n_bins+1)], color=colour, edgecolor='black')
         plt.xlabel('Total Number of Practice Events', fontsize=18)
         # tick-params:
         plt.tick_params(left = True, right = False , labelleft = True)

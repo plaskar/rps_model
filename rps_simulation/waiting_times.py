@@ -1,7 +1,7 @@
 import numpy as np
 
-def exponential_waiting_time(practice_rate):
-    dt = np.random.exponential(scale=1/practice_rate)
+def exponential_waiting_time(practice_rate, min_rate=0.0001):
+    dt = np.random.exponential(scale=max(min_rate, 1/practice_rate))
     return dt
     
 def pareto_waiting_time(practice_rate, min_wait = 0.01): 

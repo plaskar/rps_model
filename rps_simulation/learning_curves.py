@@ -3,16 +3,6 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 
-
-###########################################################################
- ###################### 0. Alias ######################
-###########################################################################
-
-
-    
-
-
-
 ###########################################################################
  ###################### 1. Concave Learning Curves ######################
 ###########################################################################
@@ -188,9 +178,25 @@ class compound_exp_learning:
         return alpha2
     
     
+###########################################################################
+ ###################### 3. Other Learning Curves ######################
+###########################################################################
+    
         
-        
+class lc_with_plateau:
+    """
+    Impact function looks like: 
+        f(s) = alpha*exp(-s)*sin(3pi*s) + a_min
+    """
 
+    def __init__(self, alpha1=0.2, s1=0.5):
+        self.alpha1 = alpha1
+        self.alpha2 = self.alpha1*(self.s1)
+
+    def updated_skill(self, skill):
+        new_skill = self.alpha*np.exp(-skill)*np.sin(3*np.pi*skill) + self.a_min
+        return new_skill
+        
 
     
 
