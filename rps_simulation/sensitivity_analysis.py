@@ -17,7 +17,7 @@ from rps_simulation import display_progress
 
 class RPS_sensitivity:
     """
-    * par_dict dictionary contains all parameters (a,b, alpha, beta, initial_skill) as keys. If corresponding value
+    * par_dict dictionary contains all parameters (a,b, alpha, beta, s0) as keys. If corresponding value
         is a number, the parameter is fixed at that number. If the kay-value is a list or 1D array, sensitivity analysisruns 
     """
     def __init__(self, 
@@ -26,12 +26,12 @@ class RPS_sensitivity:
                            'b': np.round(np.linspace(0.5, 10, 20), 3),
                            'alpha': 0.4,
                            'beta': 0.3,
-                           'initial_skill': 0.1}, 
+                           'S_0': 0.1}, 
                  learning='logistic', # other options: 'exponential', 'compound_exp', 'richards' 
                  forgetting='exp', # other options: 'pow' for power forgetting
                  practice_rate='simple', # default is simple_linear_rate, other choice is 'change' 
                  waiting_time= 'exp', # default and only option is exponential waiting time
-                 initial_skill=0.1, initial_practice_rate=1):
+                 initial_practice_rate=1):
         
         self.par_dict = par_dict
         self.par_list = list(par_dict.keys()) # all list of all parameters
@@ -80,7 +80,7 @@ class RPS_sensitivity:
         # run self.n_sims simulations for each combination of parameter values:
         for i in range(len(self.df_par)):
             a_, b_, alpha_, beta_ = self.df_par['a'][i], self.df_par['b'][i], self.df_par['alpha'][i], self.df_par['beta'][i]
-            s0_ = self.df_par['initial_skill'][i]
+            s0_ = self.df_par['S_0'][i]
             
             # Define Learning Function
             if self.learning == 'logistic':
@@ -186,11 +186,7 @@ class RPS_sensitivity:
         plt.setp(ax.get_legend().get_texts(), fontsize=plot_parms['legend_txt_fs']) 
         # set legend heading (title) fontsize:
         plt.setp(ax.get_legend().get_title(), fontsize=plot_parms['legend_head_fs'], text='$'+param+'$', fontweight='bold') 
-        
-
-        # # set legend position
-        # plt.legend('$'+param +'$', fontsize=plot_parms['legend_txt_fs'], title_fontsize=plot_parms['legend_head_fs'], loc=plot_parms['legend_pos']) 
-
+    
         
         if plot_parms['save_location']!= None: # save_location given:
             plt.savefig(plot_parms['save_location'], dpi=plot_parms['dpi'])
@@ -201,57 +197,63 @@ class RPS_sensitivity:
         
     
         
-    # def practice_events_histogram(self, param = 'a',  # parameter for which histogram wanted
-    #                               par_vals = [i/4 for i in range(5)],  # levels of the param
-    #                               par_others ={'b': 5}, # fix values of other params with > 1 level using this dict
-    #                               plot_parms = None # optionally change default plot parameter values
-    #                              ): 
-    #     """
-    #     Plot a histogram of the total practice-events for each param value in par_vals. 
-    #     The other parameters are fixed to the corresponding value in par_others. 
-    #     """
+    def practice_events_histogram(self, param = 'a',  # parameter for which histogram wanted
+                                  par_vals = [i/4 for i in range(5)],  # levels of the param
+                                  par_others ={'b': 5}, # fix values of other params with > 1 level using this dict
+                                  plot_parms = None # optionally change default plot parameter values
+                                 ): 
+        """
+        Plot a histogram of the total practice-events for each param value in par_vals. 
+        The other parameters are fixed to the corresponding value in par_others. 
+        """
+
+        # Default plot parameters, optionally user can change some/all 
+        # of these using by providing plot_parms:
+        default_plot_parms = {'alpha': 0.65, 'palette': 'rocket_r', 'bw_adj': 0.5, 'x_fs': 20, 'y_fs': 20, 'x_lim_max':1000, 
+                              'title_fs':20, 'legend_head_fs':20, 'legend_txt_fs':20, 'legend_pos':'upper center', 
+                              'save_location': None, 'dpi':256
+                             }
+
+        # If plot_parms is provided, update default parameters with it
+        if plot_parms is not None:
+            default_plot_parms.update(plot_parms)
+
+        # Use default_plot_parms for plotting
+        plot_parms = default_plot_parms
+
+        # Start with a copy of the simulation dframe. 
+        # This will finally become the df we use to make the (kde) histogram:
+        df_param = self.df_sim.copy()  
         
-    #     # Default plot parameters, optionally user can change some/all 
-    #     # of these using by providing plot_parms:
-    #     default_plot_parms = {'alpha': 0.65, 'palette': 'rocket_r', 'bw_adj': 0.5, 'x_fs': 20, 'y_fs': 20,
-    #                           'title_fs':20, 'legend_fs': 18, 'legend_pos': 'upper center', 
-    #                           'save_location': None, 'dpi':256 
-    #                          }
-
-    #     # If plot_parms is provided, update default parameters with it
-    #     if plot_parms is not None:
-    #         default_plot_parms.update(plot_parms)
-
-    #     # Use default_plot_parms for plotting
-    #     plot_parms = default_plot_parms
-
-    #     # Start with a copy of the simulation dframe. 
-    #     # This will finally become the df we use to make the (kde) histogram:
-    #     df_param = self.df_sim.copy()  
-        
-    #     # loop through other parameters and filter on their fixed values:
-    #     for key, value in par_others.items():
-    #         df_param = df_param[df_param[key]==(value)]
+        # loop through other parameters and filter on their fixed values:
+        for key, value in par_others.items():
+            df_param = df_param[df_param[key]==(value)]
             
-    #     # Now filter df_param for the param (Default 'a') parameter being in par_vals list:
-    #     df_param = df_param[df_param[param].isin(par_vals)]
+        # Now filter df_param for the param (Default 'a') parameter being in par_vals list:
+        df_param = df_param[df_param[param].isin(par_vals)]
 
-    #     # Now make histogram using seaborn:
-    #     plt.figure(figsize=(12,8), dpi=128)
-    #     ax = sns.kdeplot(df_param, x='n_prac', hue=param, fill = True, palette=plot_parms['palette'],
-    #                      alpha=plot_parms['alpha'], bw_adjust=plot_parms['bw_adj'])
-    #     plt.title('Effect of $' + param + '$', fontsize=plot_parms['title_fs'])
-    #     plt.xlim([0, max(self.df_sim['n_prac'])]) # restrict range on x-axis
-    #     plt.tick_params(left=False, labelleft=False)
-    #     plt.xlabel('Total Practice Events', fontsize=plot_parms['x_fs'])
-    #     plt.ylabel('Probability Density', fontsize=plot_parms['y_fs'])
+        ###### Make Histogram using seaborn ######
+        plt.figure(figsize=(12,8), dpi=128)
+        ax = sns.kdeplot(df_param, x='n_prac', hue=param, fill = True, palette=plot_parms['palette'],
+                         alpha=plot_parms['alpha'], bw_adjust=plot_parms['bw_adj'])
+        plt.title('Effect of $' + param + '$', fontsize=plot_parms['title_fs'])
+        plt.xlim([0,plot_parms['x_lim_max']]) # restrict range on x-axis
+        plt.tick_params(left=False, labelleft=False)
+        plt.xlabel('Total Practice Events', fontsize=plot_parms['x_fs'])
+        plt.ylabel('Probability Density', fontsize=plot_parms['y_fs'])
 
-    #     plt.setp(ax.get_legend().get_texts(), fontsize=plot_parms['legend_fs']) # legend font-size
-    #     sns.move_legend(ax, plot_parms['legend_pos'])
+        # make sure to move legend to desired position first, and then change fontsizes:
+        sns.move_legend(ax, plot_parms['legend_pos'])
+        # set legend font-size:
+        plt.setp(ax.get_legend().get_texts(), fontsize=plot_parms['legend_txt_fs']) 
+        # set legend heading (title) fontsize:
+        plt.setp(ax.get_legend().get_title(), fontsize=plot_parms['legend_head_fs'], text='$'+param+'$', fontweight='bold') 
+        
 
-    #     if plot_parms['save_location']!= None: # save_location given:
-    #         plt.savefig(plot_parms['save_location'], dpi=plot_parms['dpi'])
-    #     plt.show()
+        if plot_parms['save_location']!= None: # save_location given:
+            plt.savefig(plot_parms['save_location'], dpi=plot_parms['dpi'])
+        plt.show()
+        
 
 
     def heatmap(self, param_x ='a', param_y='b', save_location=None, dpi=512):
@@ -260,7 +262,7 @@ class RPS_sensitivity:
         By default, it shows the prop_quit measure for each combination of parameter values.
         """
 
-        pivot_table = self.df_sim.pivot(index=param_y, columns=param_x, values='prop_quit')
+        pivot_table = self.df_par.pivot(index=param_y, columns=param_x, values='prop_quit')
 
         # Plotting the heatmap
         plt.figure(figsize=(14, 12))
