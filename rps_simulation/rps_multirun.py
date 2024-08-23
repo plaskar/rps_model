@@ -110,7 +110,7 @@ class RPS_multirun:
             self.all_forgetting_rates.append(model.forgetting_rates)
             
             
-    def plot_final_skill_histogram(self, colour='blue', n_bins=50, save_location=False):
+    def plot_final_skill_histogram(self, colour='blue', n_bins=50, save_location=False, save_dpi=512):
         plt.figure(figsize=(10, 6))
         plt.hist(self.final_skills, bins=[i/n_bins for i in range(n_bins+1)], color=colour, edgecolor='black')
         plt.xlabel('Final Skill', fontsize=18)
@@ -120,11 +120,11 @@ class RPS_multirun:
         plt.xticks(fontsize=16)
         plt.yticks(fontsize=16)
         if save_location != False:
-            plt.savefig(save_location, dpi=512)
+            plt.savefig(save_location, dpi=save_dpi)
         plt.show()
         
     
-    def plot_practice_events_histogram(self, colour='blue', n_bins=50, save_location=False):
+    def plot_practice_events_histogram(self, colour='blue', n_bins=50, save_location=False, save_dpi=512):
         plt.figure(figsize=(10, 6))
         plt.hist(self.total_practice_events, bins=[i/n_bins for i in range(n_bins+1)], color=colour, edgecolor='black')
         plt.xlabel('Total Number of Practice Events', fontsize=18)
@@ -133,11 +133,11 @@ class RPS_multirun:
         plt.xticks(fontsize=16)
         plt.yticks(fontsize=16)
         if save_location != False:
-            plt.savefig(save_location, dpi=512)
+            plt.savefig(save_location, dpi=save_dpi)
         plt.show()
 
 
-    def plot_trajectory_and_histogram(self, colour_lineplots='Black', colour_histogram='Blue', n_plots=100, n_bins=50, save_location=False, bw_adjust=1):
+    def plot_trajectory_and_histogram(self, colour_lineplots='Black', colour_histogram='Blue', n_plots=100, bw_adjust=1, save_location=False, save_dpi=512 ):
         
         # make dataframe from list of final skills; makes it easier to make the histogram using seaborn
         df_finalS = pd.DataFrame(self.final_skills, columns=['final_skills'])
@@ -184,7 +184,7 @@ class RPS_multirun:
         
         plt.tight_layout()  # Adjust layout to fit
         if save_location != False:
-            plt.savefig(save_location, dpi=512)
+            plt.savefig(save_location, dpi=save_dpi)
         plt.show()        
 
 

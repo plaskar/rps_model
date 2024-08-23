@@ -172,6 +172,7 @@ class RPS_core:
 
         return self
 
+    #------ 1.2 method to get a dictionary of summary attributes from a sim. ------
     def data(self): 
         """
         Constructing summary attributes dictionary to return.
@@ -189,25 +190,7 @@ class RPS_core:
         return summary_attributes
 
     
-    def plot_simple_trajectory(self, save_location=None):
-        """
-        plot simple learning trajectory without the smoothed forgetting curve. 
-        Skill at consecutive practice-events are joined by straight lines
-        """
-        plt.figure(figsize=(10, 6))
-        plt.plot(self.practice_times, self.skill_levels, marker='o', linestyle='-', color='#FF6B6B')
-        plt.title('Simple Learning Trajectory', fontsize=22)
-        plt.xlabel('Time', fontsize=19)
-        plt.ylabel('Skill', fontsize=19)
-        plt.ylim([0,1]) # fix range of y-axis to 0-1
-        plt.grid(True, alpha=1)
-        if save_location is not None:
-            plt.savefig(save_location, dpi=512)
-        plt.show()
-    
-        
-        
-    
+    # ----- 1.3 -----
     # The function generates data to make cute plots - this includes the forgetting phase of the learning curves.
     # The generate_run_data function does not do this and only returns the list of practice_times and corresponding skill_levels and practice_rates.  
     def interpolate_learning_trajectory_dynamic(self, least_count=0.01, min_points=10):
@@ -259,13 +242,11 @@ class RPS_core:
 
         return int_practice_times, int_skill_levels
     
-    
-    def plot_learning_trajectory(self, least_count=0.01, min_points=10, overlay=None, save_location=None, col_parms=None):
+    # ----- 1.4 Plot smoothed learning trajectory (with interpolated forgetting) -----
+    def plot_learning_trajectory(self, least_count=0.01, min_points=10, overlay=None, col_parms=None, save_location=None, save_dpi=512):
         """Plots a smoothed learning trajectory including the forgetting curves interpolated  between practice-events"""
-        fig = plt.figure(figsize=(10,6))
-        grid = plt.GridSpec(2,1)
-        
-        color_dict = {'base':'#FF6B6B', 'obs_line':'black'}
+
+        color_dict = {'base':'#FF6B6B', 'obs_line':'black'} # color dict, can change using col_parms argument
         if col_parms is not None:
             color_dict.update(col_parms)
         
@@ -292,26 +273,11 @@ class RPS_core:
         plt.grid(True, alpha=1)
         
         if save_location is not None:
-            plt.savefig(save_location, dpi=512)
+            plt.savefig(save_location, dpi=save_dpi)
         plt.show()
 
 
-
-    def practice_times_plot(self, color='black', lw=1, save_location=None):
-        """Plot practice_times as vertical lines to visually show when practice events occur"""
-        plt.figure(figsize=(10, 2))  # Wide and not too high
-        for prac_time in self.practice_times[1:-1]:  # Excluding the first and last elements
-            plt.axvline(x=prac_time, color=color, linestyle='-', linewidth=lw)
-        plt.title('Practice Times', fontsize=22)
-        plt.xlabel('Time', fontsize=18)
-        plt.yticks([])  # Hide y-axis ticks
-        plt.tight_layout()
-        if save_location is not None:
-            plt.savefig(save_location, dpi=512)
-        plt.show()
-
-    
-
+    # ------ 1.5 Plot the counting process associated with the temporal practice point process -----  
     def practice_event_plot(self, color='black', lw=2):
         """Plot of the counting process associated with practice-events"""
         counts = [ i for i in range(1, len(self.practice_times)-1)] # y-axis values
@@ -324,8 +290,8 @@ class RPS_core:
         plt.tight_layout()
         plt.show()
 
-
-    # ------- Method to run Interventions --------
+    
+    # ------- 1.6 Method to run Interventions during Simulation --------
     def run_sim_with_intervention(self, set_intervention_param=None):
         """
         Runs one instance of the RPS simulation along with intervention on a, b as specified
@@ -442,8 +408,44 @@ class RPS_core:
         return self
 
 
+
     
-    def plot_intervention_trajectory(self, save_location = None):
+    # -----------------------------------------------------
+    # --------- PLOTTING METHODS --------------------------
+    # -----------------------------------------------------
+    #------ 1.7 Plot simple line-plot of updated skill at practice events (no forgetting) ------
+    def plot_simple_trajectory(self, save_location=None, save_dpi=512):
+        """
+        plot simple learning trajectory without the smoothed forgetting curve. 
+        Skill at consecutive practice-events are joined by straight lines
+        """
+        plt.figure(figsize=(10, 6))
+        plt.plot(self.practice_times, self.skill_levels, marker='o', linestyle='-', color='#FF6B6B')
+        plt.title('Simple Learning Trajectory', fontsize=22)
+        plt.xlabel('Time', fontsize=19)
+        plt.ylabel('Skill', fontsize=19)
+        plt.ylim([0,1]) # fix range of y-axis to 0-1
+        plt.grid(True, alpha=1)
+        if save_location is not None:
+            plt.savefig(save_location, dpi=save_dpi)
+        plt.show()
+
+    #------ 1.8 Plot a rectangle of practice-event times ------
+    def practice_times_plot(self, color='black', lw=1, save_location=None, save_dpi=512):
+        """Plot practice_times as vertical lines to visually show when practice events occur"""
+        plt.figure(figsize=(10, 2))  # Wide and not too high
+        for prac_time in self.practice_times[1:-1]:  # Excluding the first and last elements
+            plt.axvline(x=prac_time, color=color, linestyle='-', linewidth=lw)
+        plt.title('Practice Times', fontsize=22)
+        plt.xlabel('Time', fontsize=18)
+        plt.yticks([])  # Hide y-axis ticks
+        plt.tight_layout()
+        if save_location is not None:
+            plt.savefig(save_location, dpi=save_dpi)
+        plt.show()
+
+    # ----- 1.9 Plot skill trajectory with intervention information ----
+    def plot_intervention_trajectory(self, save_location = None, save_dpi=512):
         """
         plot simple trajectory with shaded intervention region without the smoothed forgetting curve. 
         Skill at consecutive practice-events are joined by straight lines
@@ -460,7 +462,6 @@ class RPS_core:
             elif int_status[i-1] == 1 and int_status[i] == 0:
                 int_t_stop = i
                 break  
-    
             
         plt.figure(figsize=(10, 6))
         plt.plot(self.practice_times, self.skill_levels, marker='o', linestyle='-', color='#FF6B6B')
@@ -472,213 +473,49 @@ class RPS_core:
         plt.ylabel('Skill Level', fontsize=19)
         plt.grid(True, alpha=1)
         if save_location is not None:
-            plt.savefig(save_location, dpi=512)
+            plt.savefig(save_location, dpi=save_dpi)
+        plt.show()
+
+    
+    # ----- 1.10 PLotting simple trajectory + event time info ----
+    def plot_combined_trajectory(self, save_location=None, save_dpi=512):
+        """
+        Plot simple learning trajectory and practice times in a single figure.
+        """
+        # set subfigures:
+        fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(10, 8), 
+                                   gridspec_kw={'height_ratios': [6, 1]},
+                                   sharex=True)
+        
+        # Create a larger subplot for the learning trajectory
+        ax1.plot(self.practice_times, self.skill_levels, marker='o', linestyle='-', color='#FF6B6B')
+        ax1.set_title('Simple Learning Trajectory', fontsize=22)
+        ax1.set_ylabel('Skill', fontsize=19)
+        ax1.set_ylim([0, 1])
+        ax1.grid(True, alpha=1)
+        
+        # Remove x-axis labels from the top plot
+        #ax1.set_xticklabels([])
+        
+        # Create a smaller subplot for practice times
+        #ax2 = plt.subplot2grid((4, 1), (3, 0), rowspan=1, sharex=ax1)
+        for prac_time in self.practice_times[1:-1]:  # Excluding the first and last elements
+            ax2.axvline(x=prac_time, color='black', linestyle='-', linewidth=1)
+        
+        #ax2.set_title('Practice Events', fontsize=22)
+        ax2.set_xlabel('Time', fontsize=19)
+        ax2.set_ylabel('Practice\nEvents', fontsize=14)
+        ax2.set_yticks([])  # Hide y-axis ticks
+        
+        # Adjust x-axis ticks if needed
+        ax2.set_xticks([int(x) for x in np.linspace(0, self.max_time, 11)])
+        
+        # Adjust the layout and spacing
+        plt.tight_layout()
+        
+        if save_location is not None:
+            plt.savefig(save_location, dpi=save_dpi)
         plt.show()
     
-
-
-    
-
-
-
-##############################################################################
-### 2. Class to have multiple runs of the model
-##############################################################################
-
-
-# class RPS_Basic_Multirun:
-#     """
-#     Multiple Runs of the RPS_Basic class and store useful statistics about the simulation.
-#     Also allows plotting trajectories and final skill histograms, etc. to test how different
-#     learning and forgetting curves, deadlines, spacings etc. affect results. 
-#     This class is needed also to perform sensitivity analysis.
-#     """
-#     def __init__(self, waiting_time_dist, learning_func, forgetting_func, practice_rate_func, 
-#                  deadline_dict = {'deadlines': None, 'deadline_weights': None, 'tmt_effect': None},
-#                  spacing_func = None,
-#                  n_sims=1000, initial_skill=0.1, initial_practice_rate=1, max_time=100,
-#                  interpol_dict=None # optionally define interpolation params
-#                 ):
-        
-#         # Class Attributes:
-#         self.waiting_time_dist = waiting_time_dist
-#         self.learning_func = learning_func
-#         self.forgetting_func = forgetting_func
-#         self.practice_rate_func = practice_rate_func
-
-#         # Interpolation dict:
-#         default_interpol_dict={'least_count':0.1, 'min_points':5} # default plot interpolation params
-#         if interpol_dict is not None:
-#             default_interpol_dict.update(interpol_dict) # update if user provided custon params.
-#         self.interpol_dict = default_interpol_dict
-        
-#         # hyperparameters
-#         self.n_sims = n_sims  # Number of simulations to run
-#         self.initial_skill = initial_skill
-#         self.initial_practice_rate = initial_practice_rate
-#         self.max_time = max_time
-
-#         # Deadlines (optional):
-#         self.deadlines = deadline_dict['deadlines']
-#         self.deadline_weights = deadline_dict['deadline_weights']
-#         self.tmt_effect = deadline_dict['tmt_effect']
-
-#         # Spacing Effect (optional):
-#         self.spacing_func = spacing_func # By default = None 
-#         if spacing_func is not None:
-#             # set beta_max = starting forgetting rate
-#             self.spacing_func.set_beta_max(self.forgetting_func.forgetting_rate) 
-        
-#         # Summary Data from all Runs:
-#         self.final_skills = []  # To store final skill levels from all sims
-#         self.total_practice_events = []  # To store the number of practice events from all sims
-        
-#         self.all_skill_levels = [] # list of lists, contains skill_levels for each simulation run
-#         self.all_practice_times = [] # contains practice_time list for each simulation run
-#         self.all_practice_rates = [] # contains practice_time list for each simulation run
-#         self.all_time_lags = [] # contains time_lag list for each sim run
-#         self.all_forgetting_rates = [] # ditto for forgetting_rate for each sim run
-        
-#         self.interpolated_skills = []
-#         self.interpolated_prac_times = []
-
-#     def run_multiple_sims(self, interpolate_forgetting = False):
-#         """
-#         This is the main function which runs the self.n_sims simulations and stores the final skill,
-#         total pratice events, interpolated skill levels during forgetting (warning - this is computarionaly intensive)    
-#         """
-        
-#         # set interpolate_forgetting = False to skip this. Makes simulations much faster. 
-#         # This should be turned False for sensitivity analysis. 
-#         # Should be True if you want to plot smooth skill trajectories for each individual
-#         self.interpolate_forgetting = interpolate_forgetting
-        
-#         for _ in range(self.n_sims):
-#             model = RPS_Basic(waiting_time_dist=self.waiting_time_dist, learning_func=self.learning_func,
-#                               forgetting_func=self.forgetting_func, practice_rate_func=self.practice_rate_func,
-#                               deadline_dict = {'deadlines': self.deadlines, 'deadline_weights': self.deadline_weights, 'tmt_effect': self.tmt_effect},
-#                               spacing_func = self.spacing_func,
-#                               initial_skill=self.initial_skill, initial_practice_rate=self.initial_practice_rate, max_time=self.max_time)
-#             model.run_simulation() # run one instance of simulation
-            
-#             # interpolating skills in-between practice events for smooth plots
-#             # set interpolate_forgetting = False to skip
-#             if self.interpolate_forgetting: 
-#                 lc, min_pnts = self.interpol_dict['least_count'], self.interpol_dict['min_points']
-#                 interpolated_practice_times, interpolated_skill_levels = model.interpolate_learning_trajectory_dynamic(lc, min_pnts)
-
-#                 # interpolated data:
-#                 self.interpolated_prac_times.append(interpolated_practice_times)
-#                 self.interpolated_skills.append(interpolated_skill_levels)
-                
-        
-
-#             # adding data from current sim
-#             self.final_skills.append(model.final_skill)
-#             self.total_practice_events.append(model.total_practice_events)
-#             self.all_skill_levels.append(model.skill_levels)
-#             self.all_practice_times.append(model.practice_times)
-#             self.all_time_lags.append(model.time_lags)
-#             self.all_forgetting_rates.append(model.forgetting_rates)
-            
-            
-#     def plot_final_skill_histogram(self, colour='blue', n_bins=50, save_location=False):
-#         plt.figure(figsize=(10, 6))
-#         plt.hist(self.final_skills, bins=[i/n_bins for i in range(n_bins+1)], color=colour, edgecolor='black')
-#         plt.xlabel('Final Skill', fontsize=18)
-#         plt.xlim([0,1])
-#         # tick-params:
-#         plt.tick_params(left = True, right = False , labelleft = True)
-#         plt.xticks(fontsize=16)
-#         plt.yticks(fontsize=16)
-#         if save_location != False:
-#             plt.savefig(save_location, dpi=512)
-#         plt.show()
-        
-    
-#     def plot_practice_events_histogram(self, colour='blue', n_bins=50, save_location=False):
-#         plt.figure(figsize=(10, 6))
-#         plt.hist(self.total_practice_events, bins=[i/n_bins for i in range(n_bins+1)], color=colour, edgecolor='black')
-#         plt.xlabel('Total Number of Practice Events', fontsize=18)
-#         # tick-params:
-#         plt.tick_params(left = True, right = False , labelleft = True)
-#         plt.xticks(fontsize=16)
-#         plt.yticks(fontsize=16)
-#         if save_location != False:
-#             plt.savefig(save_location, dpi=512)
-#         plt.show()
-
-
-#     def plot_trajectory_and_histogram(self, colour_lineplots='Black', colour_histogram='Blue', n_plots=100, n_bins=50, save_location=False, bw_adjust=1):
-        
-#         # make dataframe from list of final skills; makes it easier to make the histogram using seaborn
-#         df_finalS = pd.DataFrame(self.final_skills, columns=['final_skills'])
-        
-#         # Create Figure and Subplots
-#         fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(12, 6), gridspec_kw={'width_ratios': [2, 1]})
-
-#         # Plotting the skill trajectories of first n_plots learners, if self.interpolate_forgetting = True
-#         if self.interpolate_forgetting: 
-#             for skill_level, prac_times in zip(self.interpolated_skills[:n_plots], self.interpolated_prac_times[:n_plots]):
-#                 ax1.plot(prac_times, skill_level, '-', linewidth=0.5, alpha=0.7, color=colour_lineplots)  # Plot each trajectory
-        
-#         # if self.interpolate_trajectories = False, then plot simple individual trajectories  
-#         else: 
-#             for skill_level, prac_times in zip(self.all_skill_levels[:n_plots], self.all_practice_times[:n_plots]):
-#                 ax1.plot(prac_times, skill_level, '-', linewidth=0.5, alpha=0.7, color=colour_lineplots)  # Plot each trajectory
-            
-#         ax1.set_title('Learning Trajectories', fontsize=20)
-#         ax1.set_xlim(0, max([max(time) for time in self.all_practice_times]))  # Set x-axis limit based on maximum time
-#         ax1.set_ylim(0, 1)
-#         ax1.set_xlabel('Time', fontsize=22)
-#         ax1.set_ylabel('Skill',  fontsize=22)
-
-#         # Adding deadlines to the plot, if they exist:
-#         if self.deadlines is not None:
-#             normalized_weights = [float(i)/max(self.deadline_weights) for i in self.deadline_weights] 
-#             for deadline, weight in zip(self.deadlines, normalized_weights):
-#                 ax1.axvline(x=deadline, ymin=0, ymax=weight, color='black', alpha=0.5, linestyle='-', lw=1)
-        
-        
-#         # Creating the histogram on the right using seaborn
-#         sns.kdeplot(df_finalS, ax=ax2, y='final_skills', color=colour_histogram, alpha=0.7, fill=True, bw_adjust=bw_adjust)
-#         ax2.set_title('Distribution of Final Skills', fontsize=16)
-#         #ax2.set_ylabel('Final Skill', fontsize=20)  # Label for what was previously the x-axis
-#         #ax2.set_xlabel('Density', fontsize=22, labelpad=10)  # Label for what was previously the y-axis
-#         ax2.set_xlabel('')
-#         ax2.set_ylabel('Skill', fontsize=22)
-#         ax2.set_xticks([])
-#         ax2.set_ylim(ax1.get_ylim())  # Match y-limits to line plot y-axis
-        
-#         ax2.yaxis.tick_right()  # Move y-axis ticks to the right
-#         ax2.yaxis.set_label_position("right")  # Move y-axis label to the right
-
-        
-#         plt.tight_layout()  # Adjust layout to fit
-#         if save_location != False:
-#             plt.savefig(save_location, dpi=512)
-#         plt.show()        
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
