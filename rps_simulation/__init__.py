@@ -15,6 +15,8 @@ def stability_colour(val_list, c_stable='blue', c_unstable='red', c_other='black
 
 
 ####################### 0. Making Progress Bar ##############################
+# Used for sensitivity analysis, which can take too long. 
+
 import time
 from IPython.display import display, HTML, clear_output
 
