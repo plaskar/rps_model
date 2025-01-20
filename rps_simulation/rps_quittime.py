@@ -24,9 +24,9 @@ class RPS_quittime:
                  waiting_time_dist = exponential_waiting_time, # default is exponential (NOT Pareto) waiting times 
 
                  ## Initial conditions and time-range:
-                 initial_skill=0.1, initial_practice_rate=1, quit_thresh=20, max_time=10000):
+                 initial_skill=0.1, initial_practice_rate=1, quit_thresh=20, max_time=1000):
         
-        ## parameters of the RPS_core class:
+        ## Simulation Attributes
         self.waiting_time_dist = waiting_time_dist
         self.learning_func = learning_func
         self.forgetting_func = forgetting_func
@@ -37,7 +37,7 @@ class RPS_quittime:
         self.initial_skill = initial_skill
         self.initial_practice_rate = initial_practice_rate
         self.quit_thresh = quit_thresh # if waiting time is higher than this, we assume learner has hard-quit
-        self.max_time = max_time # even if quit_thresh is not met, we quit
+        self.max_time = max_time # even if quit_thresh is not met, we quit after max_time
         
         # Initialize empty lists for simulation results
         self.practice_times = [] # looks like [0, t1, t2...tn, max_time]
@@ -77,19 +77,26 @@ class RPS_quittime:
             wait_time = self.waiting_time_dist(current_practice_rate)
             next_prac_time = current_time + wait_time
             
+            
             # Check for quit condition: 
             if wait_time > self.quit_thresh:
                 flag = 1
+                self.quit = 1
+            
+            if next_prac_time > self.max_time:
+                flag = 1
+                self.quit = 0
 
             # If flag == 1, calculate final values and break
             if flag == 1:
                 final_skill = self.forgetting_func.calculate(current_skill, wait_time)
                 final_practice_rate = self.practice_rate_func.calculate(self.skill_levels)  # same final_practice rate as at the last practice_event
-                self.practice_times.append(self.max_time)
+                self.practice_times.append(next_prac_time)
                 self.skill_levels.append(final_skill) 
                 self.final_skill = final_skill 
                 self.practice_rates.append(final_practice_rate)
                 break
+
             
             # Calculate skill level just before next practice event
             skill_before_prac = self.forgetting_func.calculate(current_skill, wait_time)
@@ -105,19 +112,45 @@ class RPS_quittime:
             self.skill_levels.append(skill_after_prac) 
             self.practice_times.append(next_prac_time)
             self.practice_rates.append(next_practice_rate)
-            
+
             # Fill up time_lags and forgetting-rates list:
             if len(self.practice_times) >= 3: # at least 2 practice-events have occured:
                 self.time_lags.append(self.practice_times[-1] - self.practice_times[-2])
 
 
-        
-        
+            
         # Simulation summary data: 
         self.final_skill = self.skill_levels[-1]
         self.final_practice_rate = self.practice_rates[-1]
         self.total_practice_events = len(self.practice_times) - 2
 
         return self
+
+
+# class run_multisim(self):
+
+#     def __init__(self,
+#                 learning_func = exponential_learning(), # by default, we have exponential update s_new = s_old + alpha*(1-s_old) 
+#                 forgetting_func = exponential_forgetting(), # default is exponential forgetting
+#                 practice_rate_func = simple_linear_rate(), # default is simple_linear_rate 
+#                 waiting_time_dist = exponential_waiting_time, # default is exponential (NOT Pareto) waiting times 
+#                 ## Initial conditions and time-range:
+#                 initial_skill=[0.1], 
+#                 initial_practice_rate=1, 
+#                 quit_thresh=20, 
+#                 max_time=10000, n_sims=1000):
+        
+#         ## Simulation Attributes
+#         self.waiting_time_dist = waiting_time_dist
+#         self.learning_func = learning_func
+#         self.forgetting_func = forgetting_func
+#         self.practice_rate_func = practice_rate_func
+#         self.n_sims = n_sims
+
+
+#         # Data:
+#         self.
+        
+    
         
    
