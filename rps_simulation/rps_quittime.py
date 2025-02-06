@@ -51,6 +51,7 @@ class RPS_quittime:
         self.final_practice_rate = None # final_practice_rate = practice_rate
         self.total_practice_events = None # total practice events during the run
         self.total_learn_time = None
+        self.career_length = None
 
 
 
@@ -82,10 +83,12 @@ class RPS_quittime:
             if wait_time > self.quit_thresh:
                 flag = 1
                 self.quit = 1
+                self.career_length = current_time # agent waits too long, so quit
             
             if next_prac_time > self.max_time:
                 flag = 1
                 self.quit = 0
+                self.career_length = next_prac_time
 
             # If flag == 1, calculate final values and break
             if flag == 1:
@@ -95,6 +98,7 @@ class RPS_quittime:
                 self.skill_levels.append(final_skill) 
                 self.final_skill = final_skill 
                 self.practice_rates.append(final_practice_rate)
+                self.career_length = self.max_time # player still kept practicing
                 break
 
             
