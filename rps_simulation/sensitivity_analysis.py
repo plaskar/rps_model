@@ -8,7 +8,8 @@ from rps_simulation.learning_curves import exponential_learning, logistic_learni
 from rps_simulation.forgetting_curves import exponential_forgetting, power_forgetting 
 from rps_simulation.practice_rate import simple_linear_rate
 from rps_simulation.waiting_times import exponential_waiting_time 
-from rps_simulation.rps_base import RPS_Basic, RPS_Basic_Multirun
+from rps_simulation.rps_base import RPS_core  
+from rps_simulation.rps_multirun import RPS_multirun  
 
 import time
 from IPython.display import display, HTML, clear_output
@@ -103,7 +104,7 @@ class RPS_sensitivity:
                 temp_wait = exponential_waiting_time
 
             # Set up the RPS Basic Multirun:
-            temp_sims = RPS_Basic_Multirun(learning_func = temp_learn,
+            temp_sims = RPS_multirun(learning_func = temp_learn,
                             forgetting_func = temp_forget,
                             practice_rate_func = temp_pr,
                             waiting_time_dist = temp_wait,
@@ -147,8 +148,11 @@ class RPS_sensitivity:
 
         # Default plot parameters, optionally user can change some/all 
         # of these using by providing plot_parms:
-        default_plot_parms = {'alpha': 0.65, 'palette': 'rocket_r', 'bw_adj': 0.5, 'x_fs': 20, 'y_fs': 20, 
-                              'title_fs':20, 'legend_head_fs':20, 'legend_txt_fs':20, 'legend_pos':'upper center', 
+        default_plot_parms = {'alpha': 0.95, 'palette': sns.color_palette("Greys", n_colors=6)[1:], # change n_colors
+                              'bw_adj': 0.5, 'x_fs': 20, 'y_fs': 20, 
+                              'title_fs':20, 'legend_head_fs':20, 'legend_txt_fs':20, 
+                              'linewidth':1.5,
+                              'legend_pos':'upper center',  'common_norm': False,
                               'save_location': None, 'dpi':256
                              }
 
@@ -172,8 +176,12 @@ class RPS_sensitivity:
 
         ###### Make Histogram using seaborn ######
         plt.figure(figsize=(12,8), dpi=128)
+        
         ax = sns.kdeplot(df_param, x='final_skills', hue=param, fill = True, palette=plot_parms['palette'],
-                         alpha=plot_parms['alpha'], bw_adjust=plot_parms['bw_adj'])
+                         alpha=plot_parms['alpha'], bw_adjust=plot_parms['bw_adj'],
+                         common_norm=plot_parms['common_norm'], 
+                         linewidth=plot_parms['linewidth'])
+        
         plt.title('Effect of $' + param + '$', fontsize=plot_parms['title_fs'])
         plt.xlim([0,1]) # restrict skill range on x-axis
         plt.tick_params(left=False, labelleft=False)
@@ -209,8 +217,12 @@ class RPS_sensitivity:
 
         # Default plot parameters, optionally user can change some/all 
         # of these using by providing plot_parms:
-        default_plot_parms = {'alpha': 0.65, 'palette': 'rocket_r', 'bw_adj': 0.5, 'x_fs': 20, 'y_fs': 20, 'x_lim_max':1000, 
-                              'title_fs':20, 'legend_head_fs':20, 'legend_txt_fs':20, 'legend_pos':'upper center', 
+        default_plot_parms = {'alpha': 0.85, 
+                              'palette': sns.color_palette("Greys", n_colors=6)[1:], 
+                              'bw_adj': 0.8, 'x_fs': 20, 'y_fs': 20, 'x_lim_max':1000, 
+                              'title_fs':20, 'legend_head_fs':20, 'legend_txt_fs':20, 
+                              'linewidth':1.5,
+                              'legend_pos':'upper center',  'common_norm':False,
                               'save_location': None, 'dpi':256
                              }
 
@@ -234,8 +246,12 @@ class RPS_sensitivity:
 
         ###### Make Histogram using seaborn ######
         plt.figure(figsize=(12,8), dpi=128)
+        
         ax = sns.kdeplot(df_param, x='n_prac', hue=param, fill = True, palette=plot_parms['palette'],
-                         alpha=plot_parms['alpha'], bw_adjust=plot_parms['bw_adj'])
+                         alpha=plot_parms['alpha'], bw_adjust=plot_parms['bw_adj'],
+                         common_norm=plot_parms['common_norm'],
+                        linewidth=plot_parms['linewidth'])
+        
         plt.title('Effect of $' + param + '$', fontsize=plot_parms['title_fs'])
         plt.xlim([0,plot_parms['x_lim_max']]) # restrict range on x-axis
         plt.tick_params(left=False, labelleft=False)
@@ -255,40 +271,45 @@ class RPS_sensitivity:
         plt.show()
         
 
-
     def heatmap(self, param_x ='a', param_y='b', save_location=None, dpi=512):
+        
         """
         Makes a heatmap with param_x on x-axis, param_y on y-axis. 
         By default, it shows the prop_quit measure for each combination of parameter values.
         """
-
+        # Helper dict, to display axes labels in plot:
+        greek_map = {'alpha': r'$\alpha$', 
+                     'beta': r'$\beta$', 
+                    'a': r'$a$', 
+                    'b': r'$b$'}
+        
         pivot_table = self.df_par.pivot(index=param_y, columns=param_x, values='prop_quit')
-
+        
         # Plotting the heatmap
         plt.figure(figsize=(14, 12))
-        ax = sns.heatmap(pivot_table, annot=True, fmt=".2f", cmap="coolwarm", annot_kws={"fontsize":7})
-        
+        ax = sns.heatmap(pivot_table, annot=True, fmt=".1f", cmap="coolwarm", annot_kws={"fontsize":7})
+
         ax.figure.axes[-1].set_ylabel('Proportion Quit', size=20) # value bar to side
         plt.gca().invert_yaxis()
-        
+
         # Increase the label size for the color bar
         cbar = ax.collections[0].colorbar
         cbar.ax.tick_params(labelsize=12)
-        
-        plt.title('Heatmap of Quit Proportions', fontsize=19)
-        plt.xlabel('Parameter ' + param_x, fontsize=19)
-        plt.ylabel('Parameter ' + param_y, fontsize=19)
 
+        
+        plt.xlabel(f'Parameter {greek_map[param_x]}', fontsize=19)
+        plt.ylabel(f'Parameter {greek_map[param_y]}', fontsize=19)
+
+        plt.title('Heatmap of Quit Proportions', fontsize=19)
+        # plt.xlabel(r'Parameter $\' + param_x + '$', fontsize=19)
+        # plt.ylabel(r'Parameter $\' + param_y +'$', fontsize=19)
         if save_location is not None:
             plt.savefig(save_location, dpi=dpi)
         plt.show()
 
-    #def percent_quit_lineplot(self):
-        # Plot a line plot of the percentage of learners who quit for each parameter value
 
 
-
-
+   
 
 
 

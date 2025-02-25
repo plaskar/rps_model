@@ -478,7 +478,7 @@ class RPS_core:
 
     
     # ----- 1.10 PLotting simple trajectory + event time info ----
-    def plot_combined_trajectory(self, save_location=None, save_dpi=512):
+    def plot_combined_trajectory(self, colour= '#FF6B6B', save_location=None, save_dpi=512):
         """
         Plot simple learning trajectory and practice times in a single figure.
         """
@@ -488,7 +488,7 @@ class RPS_core:
                                    sharex=True)
         
         # Create a larger subplot for the learning trajectory
-        ax1.plot(self.practice_times, self.skill_levels, marker='o', linestyle='-', color='#FF6B6B')
+        ax1.plot(self.practice_times, self.skill_levels, marker='o', linestyle='-', color=colour)
         ax1.set_title('Simple Learning Trajectory', fontsize=22)
         ax1.set_ylabel('Skill', fontsize=19)
         ax1.set_ylim([0, 1])

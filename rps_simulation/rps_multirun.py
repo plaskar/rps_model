@@ -110,33 +110,101 @@ class RPS_multirun:
             self.all_forgetting_rates.append(model.forgetting_rates)
             
             
-    def plot_final_skill_histogram(self, colour='blue', n_bins=50, save_location=False, save_dpi=512):
+    def plot_final_skill_distribution(self, colour='blue', n_bins=50, bw_adjust=0.5,
+                                   save_location=False, save_dpi=512):
+        
         plt.figure(figsize=(10, 6))
-        plt.hist(self.final_skills, bins=[i/n_bins for i in range(n_bins+1)], color=colour, edgecolor='black')
-        plt.xlabel('Final Skill', fontsize=18)
-        plt.xlim([0,1])
-        # tick-params:
-        plt.tick_params(left = True, right = False , labelleft = True)
-        plt.xticks(fontsize=16)
-        plt.yticks(fontsize=16)
-        if save_location != False:
-            plt.savefig(save_location, dpi=save_dpi)
-        plt.show()
+        
+        # Create the distribution plot
+        sns.kdeplot(
+            data=self.final_skills,
+            color=colour,
+            fill=True,
+            alpha=0.5,
+            linewidth=2,
+            bw_adjust=bw_adjust
+        )
+
         
     
-    def plot_practice_events_histogram(self, colour='blue', n_bins=50, save_location=False, save_dpi=512):
-        plt.figure(figsize=(10, 6))
-        plt.hist(self.total_practice_events, bins=[i/n_bins for i in range(n_bins+1)], color=colour, edgecolor='black')
-        plt.xlabel('Total Number of Practice Events', fontsize=18)
         # tick-params:
         plt.tick_params(left = True, right = False , labelleft = True)
         plt.xticks(fontsize=16)
-        plt.yticks(fontsize=16)
+        plt.xlim([0,1])
+        plt.yticks([], fontsize=16)
+        plt.ylabel('', fontsize=16)
+        plt.xlabel('Final Skill', fontsize=16)
+        plt.title('Distribution of Final Skills', fontsize=18)
+
+        
+        # Add a rug plot at the bottom for data points
+        sns.rugplot(
+            data=self.final_skills,
+            color=colour,
+            alpha=0.5,
+            height=0.05
+        )
+        
         if save_location != False:
-            plt.savefig(save_location, dpi=save_dpi)
+            plt.savefig(save_location, dpi=save_dpi, bbbox_inches='tight')
+        plt.show()
+        
+
+    def plot_practice_events_distribution(self, colour='blue', bw_adjust=0.5, save_location=False, save_dpi=512):
+        """
+        Plot a smooth distribution of total practice events using seaborn's kdeplot.
+        
+        Parameters:
+        -----------
+        color : str
+            Color of the distribution plot
+        bw_adjust : float
+            Bandwidth adjustment factor for kernel density estimation
+        save_location : str or False
+            If provided, saves the plot to this location
+        save_dpi : int
+            DPI for saved figure
+        """
+        x_lim = 100*((max(self.total_practice_events)+100)//100)
+        
+        # Create figure
+        plt.figure(figsize=(10, 6))
+        
+        # Create the distribution plot
+        sns.kdeplot(
+            data=self.total_practice_events,
+            color=colour,
+            fill=True,
+            alpha=0.5,
+            linewidth=2,
+            bw_adjust=bw_adjust,
+            edgecolor='black'
+        )
+        
+        # Customize the plot
+        plt.xlabel('Total Number of Practice Events', fontsize=16)
+        plt.ylabel('', fontsize=16)
+        plt.title('Distribution of Total Practice Events', fontsize=18 )
+        plt.tick_params(left=True, right=False, labelleft=False)
+        plt.xlim([0, x_lim])
+        plt.yticks([],fontsize=16)
+        plt.xticks(fontsize=16)
+        
+        # Add a rug plot at the bottom for data points
+        sns.rugplot(
+            data=self.total_practice_events,
+            color=colour,
+            alpha=0.5,
+            height=0.05
+        )
+        
+        # Save if location provided
+        if save_location:
+            plt.savefig(save_location, dpi=save_dpi, bbox_inches='tight')
+        
         plt.show()
 
-
+    
     def plot_trajectory_and_histogram(self, colour_lineplots='Black', colour_histogram='Blue', n_plots=100, bw_adjust=1, save_location=False, save_dpi=512 ):
         
         # make dataframe from list of final skills; makes it easier to make the histogram using seaborn
