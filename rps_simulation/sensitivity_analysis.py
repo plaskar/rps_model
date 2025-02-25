@@ -247,10 +247,15 @@ class RPS_sensitivity:
         ###### Make Histogram using seaborn ######
         plt.figure(figsize=(12,8), dpi=128)
         
-        ax = sns.kdeplot(df_param, x='n_prac', hue=param, fill = True, palette=plot_parms['palette'],
-                         alpha=plot_parms['alpha'], bw_adjust=plot_parms['bw_adj'],
+        ax = sns.kdeplot(df_param, x='n_prac', 
+                         hue=param, 
+                         fill = True, 
+                         palette=plot_parms['palette'],
+                         alpha=plot_parms['alpha'], 
+                         bw_adjust=plot_parms['bw_adj'],
                          common_norm=plot_parms['common_norm'],
-                        linewidth=plot_parms['linewidth'])
+                         #linestyle='--',
+                         linewidth=plot_parms['linewidth'])
         
         plt.title('Effect of $' + param + '$', fontsize=plot_parms['title_fs'])
         plt.xlim([0,plot_parms['x_lim_max']]) # restrict range on x-axis
