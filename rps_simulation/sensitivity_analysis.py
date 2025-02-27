@@ -292,18 +292,20 @@ class RPS_sensitivity:
         
         # Plotting the heatmap
         plt.figure(figsize=(14, 12))
-        ax = sns.heatmap(pivot_table, annot=True, fmt=".1f", cmap="coolwarm", annot_kws={"fontsize":7})
+        ax = sns.heatmap(pivot_table, annot=True, fmt=".1f", cmap="coolwarm", annot_kws={"fontsize":12})
 
         ax.figure.axes[-1].set_ylabel('Proportion Quit', size=20) # value bar to side
         plt.gca().invert_yaxis()
 
         # Increase the label size for the color bar
         cbar = ax.collections[0].colorbar
-        cbar.ax.tick_params(labelsize=12)
+        cbar.ax.tick_params(labelsize=10)
 
         
         plt.xlabel(f'Parameter {greek_map[param_x]}', fontsize=19)
         plt.ylabel(f'Parameter {greek_map[param_y]}', fontsize=19)
+        plt.xticks(fontsize=12)
+        plt.yticks(fontsize=12)
 
         plt.title('Heatmap of Quit Proportions', fontsize=19)
         # plt.xlabel(r'Parameter $\' + param_x + '$', fontsize=19)

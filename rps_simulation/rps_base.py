@@ -450,20 +450,17 @@ class RPS_core:
         plot simple trajectory with shaded intervention region without the smoothed forgetting curve. 
         Skill at consecutive practice-events are joined by straight lines
         """
-        #int_t_start =  None
-        #int_t_stop =  None
+        int_t_start =  None
+        int_t_stop =  None
         int_status = self.int_status
         
         # Loop through the list and look for transitions
-        for i in range(1, len(self.int_status)):
+        for i in range(1, len(int_status)):
             if int_status[i-1] == 0 and int_status[i] == 1:
-                int_t_start = i
-                print(int_t_start)
-                # if int_t_start is None:  # Ensure idx1 is set only the first time the transition occurs
-                
+                if int_t_start is None:  # Ensure idx1 is set only the first time the transition occurs
+                    int_t_start = i
             elif int_status[i-1] == 1 and int_status[i] == 0:
                 int_t_stop = i
-                print(int_t_stop)
                 break  
             
         plt.figure(figsize=(10, 6))
