@@ -80,7 +80,7 @@ class RPS_quittime:
             
             
             # Check for quit condition: 
-            if wait_time > self.quit_thresh:
+            if wait_time > self.quit_thresh or current_skill < 0.01:
                 flag = 1
                 self.quit = 1
                 self.career_length = current_time # agent waits too long, so quit
@@ -88,7 +88,7 @@ class RPS_quittime:
             if next_prac_time > self.max_time:
                 flag = 1
                 self.quit = 0
-                self.career_length = next_prac_time
+                self.career_length = self.max_time # agent practices till max_time
 
             # If flag == 1, calculate final values and break
             if flag == 1:
@@ -98,7 +98,7 @@ class RPS_quittime:
                 self.skill_levels.append(final_skill) 
                 self.final_skill = final_skill 
                 self.practice_rates.append(final_practice_rate)
-                self.career_length = self.max_time # player still kept practicing
+                # self.career_length = self.max_time # player still kept practicing
                 break
 
             
@@ -130,31 +130,3 @@ class RPS_quittime:
 
         return self
 
-
-# class run_multisim(self):
-
-#     def __init__(self,
-#                 learning_func = exponential_learning(), # by default, we have exponential update s_new = s_old + alpha*(1-s_old) 
-#                 forgetting_func = exponential_forgetting(), # default is exponential forgetting
-#                 practice_rate_func = simple_linear_rate(), # default is simple_linear_rate 
-#                 waiting_time_dist = exponential_waiting_time, # default is exponential (NOT Pareto) waiting times 
-#                 ## Initial conditions and time-range:
-#                 initial_skill=[0.1], 
-#                 initial_practice_rate=1, 
-#                 quit_thresh=20, 
-#                 max_time=10000, n_sims=1000):
-        
-#         ## Simulation Attributes
-#         self.waiting_time_dist = waiting_time_dist
-#         self.learning_func = learning_func
-#         self.forgetting_func = forgetting_func
-#         self.practice_rate_func = practice_rate_func
-#         self.n_sims = n_sims
-
-
-#         # Data:
-#         self.
-        
-    
-        
-   
