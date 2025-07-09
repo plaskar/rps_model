@@ -413,6 +413,7 @@ class RPS_core:
     # -----------------------------------------------------
     # --------- PLOTTING METHODS --------------------------
     # -----------------------------------------------------
+    
     #------ 1.7 Plot simple line-plot of updated skill at practice events (no forgetting) ------
     def plot_simple_trajectory(self, save_location=None, save_dpi=512):
         """
