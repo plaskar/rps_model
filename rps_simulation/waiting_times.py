@@ -1,6 +1,6 @@
 import numpy as np
 
-def exponential_waiting_time(practice_rate, min_rate=0.0001):
+def exponential_waiting_time(practice_rate, min_rate=0.01):
     dt = np.random.exponential(scale=max(min_rate, 1/practice_rate))
     return dt
     

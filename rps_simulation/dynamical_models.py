@@ -6,6 +6,18 @@ from matplotlib.patches import Patch
 from . import stability_colour
 
 
+"""
+Code for making bifurcation diagrams for the 'Differential Equation' models of 
+skill dynamics, as described in the paper.
+
+I use sympy to calculate the expressions for fixed points and staibility. 
+"""
+
+
+###############################################
+### Sigmoid Model ###
+###############################################
+
 class logistic_model:
     """
     * This class defines the dynamical RPS model with logistic learning curve.  

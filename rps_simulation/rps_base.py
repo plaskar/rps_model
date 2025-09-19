@@ -17,7 +17,8 @@ from rps_simulation.waiting_times import exponential_waiting_time
 class RPS_core:
     """
     The core RPS Model Class makes one run of the model.
-    * It has a fixed forgetting rate, fixed learning rate. 
+    * It has a constant forgetting and learning rate by default. Optionally, 
+        spacing effect can be added to use variable forgetting rates. 
     
     * Users have to specify:
         1. "waiting_time_dist": The waiting time distribution

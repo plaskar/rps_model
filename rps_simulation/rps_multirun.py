@@ -19,7 +19,7 @@ class RPS_multirun:
     Multiple Runs of the RPS_core class and store useful statistics about the simulation.
     Also allows plotting trajectories and final skill histograms, etc. to test how different
     learning and forgetting curves, deadlines, spacings etc. affect results. 
-    This class is needed also to perform sensitivity analysis.
+    This class is used to perform sensitivity analysis.
     """
     def __init__(self, waiting_time_dist, learning_func, forgetting_func, practice_rate_func, 
                  deadline_dict = {'deadlines': None, 'deadline_weights': None, 'tmt_effect': None},
@@ -73,7 +73,7 @@ class RPS_multirun:
     def run_multiple_sims(self, interpolate_forgetting = False):
         """
         This is the main function which runs the self.n_sims simulations and stores the final skill,
-        total pratice events, interpolated skill levels during forgetting (warning - this is computarionaly intensive)    
+        total pratice events, interpolated skill levels during forgetting (warning - this is computationally intensive)    
         """
         
         # set interpolate_forgetting = False to skip this. Makes simulations much faster. 
@@ -81,7 +81,11 @@ class RPS_multirun:
         # Should be True if you want to plot smooth skill trajectories for each individual
         self.interpolate_forgetting = interpolate_forgetting
         
-        for _ in range(self.n_sims):
+        for i in range(self.n_sims):
+            # set up learning curves, forgetting curves and practice rate funcs:
+            
+
+
             model = RPS_core(waiting_time_dist=self.waiting_time_dist, learning_func=self.learning_func,
                               forgetting_func=self.forgetting_func, practice_rate_func=self.practice_rate_func,
                               deadline_dict = {'deadlines': self.deadlines, 'deadline_weights': self.deadline_weights, 'tmt_effect': self.tmt_effect},
@@ -98,8 +102,6 @@ class RPS_multirun:
                 # interpolated data:
                 self.interpolated_prac_times.append(interpolated_practice_times)
                 self.interpolated_skills.append(interpolated_skill_levels)
-                
-        
 
             # adding data from current sim
             self.final_skills.append(model.final_skill)

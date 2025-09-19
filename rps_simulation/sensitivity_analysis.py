@@ -67,7 +67,7 @@ class RPS_sensitivity:
             is required for future. 
 
         TODO: 
-        1. add prop_expert to df_sim, calculating the proportion of expertise 9defined using a threshold on skill)
+        1. add prop_expert to df_sim, calculating the proportion of expertise defined using a threshold on skill)
         """
         self.max_time = max_time
         self.n_sims = n_sims
