@@ -124,12 +124,11 @@ class RPS_core:
             # If next practice time is beyond max_time, calculate final skill level:
             if next_prac_time > self.max_time:
                 final_skill = self.forgetting_func.calculate(current_skill, self.max_time - current_time)
-                final_practice_rate = self.practice_rate_func.calculate(self.skill_levels)  # same final_practice rate as at the last practice_event
+                final_practice_rate = self.practice_rate_func.calculate(self.skill_levels, Delta_S=dS)  # same final_practice rate as at the last practice_event
                 self.practice_times.append(self.max_time)
                 self.skill_levels.append(final_skill) 
                 self.final_skill = final_skill 
                 self.practice_rates.append(final_practice_rate)
-                #self.final_practice_rate = final_practice_rate
                 break
             
             # Calculate skill level just before next practice event
@@ -138,8 +137,12 @@ class RPS_core:
             # Calculate skill level just after practice event
             skill_after_prac = self.learning_func.updated_skill(skill_before_prac)
             
+            # Skill increase during this practice event:
+            dS = skill_after_prac - skill_before_prac
+
             # Calculate practice rate for next practice event
-            next_practice_rate = self.practice_rate_func.calculate(skill_history = [self.skill_levels, skill_after_prac])
+            next_practice_rate = self.practice_rate_func.calculate(skill_history = [self.skill_levels, skill_after_prac], 
+                                                                   Delta_S=dS)
             
             # add deadline-effect to update practice-rate (optinal) if not None
             if self.deadlines is not None: 
@@ -170,6 +173,7 @@ class RPS_core:
         self.final_skill = self.skill_levels[-1]
         self.final_practice_rate = self.practice_rates[-1]
         self.total_practice_events = len(self.practice_times) - 2
+
 
         return self
 
@@ -244,38 +248,58 @@ class RPS_core:
         return int_practice_times, int_skill_levels
     
     # ----- 1.4 Plot smoothed learning trajectory (with interpolated forgetting) -----
-    def plot_learning_trajectory(self, least_count=0.01, min_points=10, overlay=None, col_parms=None, save_location=None, save_dpi=512):
-        """Plots a smoothed learning trajectory including the forgetting curves interpolated  between practice-events"""
+    def plot_learning_trajectory(self, least_count=0.01, min_points=10, overlay=None, pr_curve = True,
+                                 col_parms=None, save_location=None, save_dpi=512):
+        """ 
+        Plots a smoothed learning trajectory including the forgetting curves 
+        interpolated  between practice-events
+        """
 
-        color_dict = {'base':'#FF6B6B', 'obs_line':'black'} # color dict, can change using col_parms argument
+        color_dict = {'base':'#FF6B6B',  'obs_line':'black'} # color dict, can change using col_parms argument
         if col_parms is not None:
             color_dict.update(col_parms)
         
         interpolated_practice_times, interpolated_skill_levels = self.interpolate_learning_trajectory_dynamic(least_count, min_points)
         
-        plt.figure(figsize=(10, 6))
-        plt.plot(interpolated_practice_times, interpolated_skill_levels, linestyle='-', color=color_dict['base'])
+        plt.figure(figsize=(10, 6), dpi=128)
+        plt.plot(interpolated_practice_times, interpolated_skill_levels, linestyle='-', lw='1', color=color_dict['base'],
+                 label='Skill Trajectory with Forgetting')
 
         # Using 'overlay' parameter you can have either:
         #    1. Markers of the updated skill values at practice points = observed skill levels 
         #    2. An additional line plot of the smooth learning trajectory with forgetting part interpolated.
         #       Mind you, it makes the plot file size much larger. 
-        # You can also change color using the 'col_parms' parameter.     
+        # You can also change color using the 'col_parms' parameter.   
+  
         if overlay == 'markers':
-            plt.scatter(self.practice_times, self.skill_levels, marker='o', linestyle='-', color=color_dict['base'])
+            plt.scatter(self.practice_times, self.skill_levels, marker='o', linestyle='-', lw=1, color=color_dict['base'])
         elif overlay=='observed_line':
-            plt.plot(self.practice_times, self.skill_levels, marker='o', linestyle='-', color=color_dict['obs_line'])
-            
-        plt.title('Learning Trajectory with Forgetting', fontsize=22)
-        plt.xlabel('Time', fontsize=18)
+            plt.plot(self.practice_times, self.skill_levels, marker='o', linestyle='-', lw=1,  alpha=0.8,  
+                     label='Observed Skill Trajectory', color=color_dict['obs_line'])
+        
+        ax1 = plt.gca()
+        plt.title('Sample Learning Trajectory', fontsize=22)
+        ax1.set('Time', fontsize=18)
         plt.ylabel('Skill', fontsize=18)
-        plt.ylim([0,1]) # fix range of y-axis to 0-1
+        plt.ylim([0,1]) 
         plt.xlim([0, self.max_time]) # x-rane between 0 to max_time
         plt.grid(True, alpha=1)
         
+        if pr_curve is True: # plot practice rate curve on secondary y-axis
+            ax2 = ax1.twinx()
+            ax2.step(self.practice_times, self.practice_rates, where='pre', linestyle='--', lw=1.5, 
+                     label='Practice Rate', color='blue', alpha=0.6)
+            ax2.set_ylabel('Practice Rate', fontsize=16, color='black')
+            ax2.set_ylim([0, max(self.practice_rates)*1.1]) # y-range for practice rate axis
+            ax2.tick_params(axis='y', labelcolor='black')
+
+        plt.legend(fontsize=12)
+
         if save_location is not None:
             plt.savefig(save_location, dpi=save_dpi)
         plt.show()
+
+
 
 
     # ------ 1.5 Plot the counting process associated with the temporal practice point process -----  

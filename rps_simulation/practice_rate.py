@@ -6,8 +6,10 @@ import numpy as np
 
 # 1. simple_practice_rate:  
     The simple practice rate is a linear function of the skill just after the current practice-event. 
-
-# 2. general_practice_rate: --- to do ----    
+# 2. linear_rate_plus_change: 
+   The practice rate is a linear function of the current skill and  the change in skill since last practice-event.
+# 3. general_linear_rate: 
+   a linear function of all previous skill values in skill_history   
 """
 
 class simple_linear_rate:
@@ -30,7 +32,7 @@ class simple_linear_rate:
         self.a= a
         self.b = b
 
-    def calculate(self, skill_history):
+    def calculate(self, skill_history, Delta_S=None):
         practice_rate = self.a + self.b*skill_history[-1]
         return practice_rate
 
@@ -61,14 +63,85 @@ class linear_rate_plus_change:
         self.c = c
         self.min_rate = min_rate
         
-    def calculate(self, skill_history):
+    def calculate(self, skill_history, Delta_S=None):
         if len(skill_history) >= 3: # at least 2 practice events
             practice_rate = max(self.a + self.b*skill_history[-1] + self.c*(skill_history[-1] - skill_history[-2]), self.min_rate)
         else: # if only 1 practice event so far
             practice_rate = self.a + self.b*skill_history[-1]
         return practice_rate        
+    
 
 
+
+class linear_rate_plus_gains:
+    """
+    practice rate equation now has an additional term c*(S - S_prev):
+                practice_rate = a + b*S + c*Delta_S
+
+    Here: 
+    S = the current skill (S) just after practice (the increased skill)
+    a = min. practice rate
+    b = sensitivity to success
+    c = sensitivity to learning progress
+    Delta_S = skill gained during last practice event
+
+    Inputs: 
+        skill_history: the list of skill_values containing starting_skill (S0) and skill S just after every practice event
+
+    The idea is that learners have a higher practice rate (are more motivated) they improve a lot during the last practice event.
+    that is, a higher Delta_S is motivating. 
+    """
+    
+    def __init__(self, a=0.2, b=5, c=1):
+        self.a = a
+        self.b = b
+        self.c = c
+        
+    def calculate(self, skill_history, Delta_S):
+        practice_rate = self.a + self.b*skill_history[-1] + self.c*Delta_S
+        return practice_rate        
+    
+
+class linear_rate_plus_target:
+    """
+    practice rate equation now has an additional term c*(S - S_prev):
+                practice_rate = a + b*S + c*max(S_target - S, 0)
+
+    Here: 
+    S = the current skill (S) just after practice (the increased skill)
+    a = min. practice rate
+    b = sensitivity to success
+    c = ambition to reach target
+    S_target = target skill level
+    Delta_S = skill gained during last practice event
+
+    Inputs: 
+        skill_history: the list of skill_values containing starting_skill (S0) and skill S just after every practice event
+
+    The idea is that learners have a higher practice rate (are more motivated) when their current skill 
+    is below their target skill level. This reflects ambition to reach a target skill level. 
+    If skill is above target, this additional term has no effect.
+    """
+    
+    def __init__(self, a=0.2, b=5, c=1, S_target=0.8):
+        self.a = a
+        self.b = b
+        self.c = c
+        self.S_target = S_target
+        
+    def calculate(self, skill_history, Delta_S):
+        practice_rate = self.a + self.b*skill_history[-1] + self.c*max((self.S_target - skill_history[-1])*skill_history[-1], 0)
+        return practice_rate        
+    
+
+
+
+
+
+
+
+
+# ---- the most general linear rate function ---- #
 class general_linear_rate:
     """
     In both the cases above, the practice_rate is a linear function of skill history (call it 's'):
@@ -93,7 +166,7 @@ class general_linear_rate:
         self.weights =weights
         self.min_rate = min_rate
 
-    def calculate(self, skill_history):
+    def calculate(self, skill_history, Delta_S=None):
         # converting to numpy array (in case input is python list)
         w = np.array(self.weights)
         s = np.array(skill_history)

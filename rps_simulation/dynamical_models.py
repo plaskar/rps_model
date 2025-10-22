@@ -117,7 +117,7 @@ class logistic_model:
         plt.show()
 
         # uncomment below if you want to get calculated fixed point and derivatives:
-        return fp_vals, deriv_fp_vals  
+        # return fp_vals, deriv_fp_vals  
 
 
 
