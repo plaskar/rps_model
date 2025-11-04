@@ -98,7 +98,6 @@ class RPS_quittime:
                 self.skill_levels.append(final_skill) 
                 self.final_skill = final_skill 
                 self.practice_rates.append(final_practice_rate)
-                # self.career_length = self.max_time # player still kept practicing
                 break
 
             

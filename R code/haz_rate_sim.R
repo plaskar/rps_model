@@ -5,14 +5,16 @@ library(lubridate)
 
 
 ## ---- 1. Loading Data ----
-df_exp_quit <- read.csv('../data/df_exp_quit.csv') # exponential sim
-df_log_quit <- read.csv('../data/df_log_quit.csv') # logistic sim
+# first set working directory to current file
+df_log_ID_rquit <- read.csv('../data/log_ID_rquit.csv') # exponential sim
+#df_exp_quit <- read.csv('../data/df_exp_quit.csv') # exponential sim
+#df_log_quit <- read.csv('../data/df_log_quit.csv') # logistic sim
 
 
 ## ---- 2. Get Quit Hazard rate ----
 # df_log100 <- df_log_quit %>% filter(prac)
 
-hazard_log <- muhaz(times = df_log_quit$prac_final, delta = df_log_quit$quit, 
+hazard_log <- muhaz(times = df_log_ID_rquit$practime_final, delta = df_log_ID_rquit$quit_label, 
                     min.time = 0, max.time = 1000,
                     n.min.grid = 51, n.est.grid = 101) # make hazard function
 
@@ -33,8 +35,8 @@ write.csv(hazard_log_df, file='../data/sim_log_haz_rates.csv', row.names = FALSE
 ### ---- 4.1 Logistic ---- 
 log_haz_plot <- ggplot(hazard_log_df, aes(x=time, y=haz_rate)) +
   geom_line() +
-  labs(title="Logistic Simulation", 
-       x="Time", 
+  labs(title="Logistic Simulation with Random Quitting", 
+       x="Simulation Time", 
        y="Quitting Hazard Rate") + 
   theme_bw() + 
   theme(legend.position = c(0.8, 0.8),

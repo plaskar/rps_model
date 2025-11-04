@@ -167,7 +167,7 @@ class RPS_multirun:
         save_dpi : int
             DPI for saved figure
         """
-        x_lim = 100*((max(self.total_practice_events)+100)//100)
+        x_lim = 100*((max(self.total_practice_events)+100)//100) # x-axis limit, rounded to nearest 100
         
         # Create figure
         plt.figure(figsize=(10, 6))
@@ -184,7 +184,7 @@ class RPS_multirun:
         )
         
         # Customize the plot
-        plt.xlabel('Total Number of Practice Events', fontsize=16)
+        plt.xlabel('Number of Practice Events', fontsize=16)
         plt.ylabel('', fontsize=16)
         plt.title('Distribution of Total Practice Events', fontsize=18 )
         plt.tick_params(left=True, right=False, labelleft=False)
@@ -258,3 +258,25 @@ class RPS_multirun:
         plt.show()        
 
 
+
+    def plot_fskill_pe_scatter(self, colour='blue', save_location=False, save_dpi=512):
+        """
+        Scatter plot of final skill vs total practice events.
+        """
+        plt.figure(figsize=(8, 6))
+        plt.scatter(self.total_practice_events, self.final_skills, s=15, 
+                    color=colour, alpha=0.8)
+        
+        plt.xlabel('Total Practice Events', fontsize=18)
+        plt.ylabel('Final Skill', fontsize=18)
+        plt.title('Final Skill vs Total Practice Events', fontsize=18)
+        x_lim = 100*((max(self.total_practice_events)+100)//100) # x-axis limit, rounded to nearest 100
+        plt.xlim(0, x_lim)
+        plt.ylim(-0.05, 1)
+        plt.xticks(fontsize=16)
+        plt.yticks(fontsize=16)
+        plt.grid(True)
+        
+        if save_location != False:
+            plt.savefig(save_location, dpi=save_dpi, bbox_inches='tight')
+        plt.show()

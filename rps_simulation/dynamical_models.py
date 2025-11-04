@@ -10,7 +10,7 @@ from . import stability_colour
 Code for making bifurcation diagrams for the 'Differential Equation' models of 
 skill dynamics, as described in the paper.
 
-I use sympy to calculate the expressions for fixed points and staibility. 
+I used sympy to calculate the expressions for fixed points and staibility. 
 """
 
 

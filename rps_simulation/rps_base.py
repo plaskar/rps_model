@@ -112,6 +112,8 @@ class RPS_core:
         self.forgetting_rates = []  # only filled when 1 or more PEs have occured
         
         
+        dS = None # temp variable, stores skill increase during last practice event
+        
         while self.practice_times[-1] < self.max_time:
             current_time = self.practice_times[-1]
             current_skill = self.skill_levels[-1]
@@ -262,7 +264,7 @@ class RPS_core:
         interpolated_practice_times, interpolated_skill_levels = self.interpolate_learning_trajectory_dynamic(least_count, min_points)
         
         plt.figure(figsize=(10, 6), dpi=128)
-        plt.plot(interpolated_practice_times, interpolated_skill_levels, linestyle='-', lw='1', color=color_dict['base'],
+        plt.plot(interpolated_practice_times, interpolated_skill_levels, linestyle='--', lw='1', color=color_dict['base'],
                  label='Skill Trajectory with Forgetting')
 
         # Using 'overlay' parameter you can have either:
@@ -274,26 +276,36 @@ class RPS_core:
         if overlay == 'markers':
             plt.scatter(self.practice_times, self.skill_levels, marker='o', linestyle='-', lw=1, color=color_dict['base'])
         elif overlay=='observed_line':
-            plt.plot(self.practice_times, self.skill_levels, marker='o', linestyle='-', lw=1,  alpha=0.8,  
+            plt.plot(self.practice_times, self.skill_levels, marker='o', linestyle='-', lw=2,  alpha=0.8,  
                      label='Observed Skill Trajectory', color=color_dict['obs_line'])
         
-        ax1 = plt.gca()
-        plt.title('Sample Learning Trajectory', fontsize=22)
-        ax1.set('Time', fontsize=18)
+        plt.xlabel('Time', fontsize=18)
         plt.ylabel('Skill', fontsize=18)
         plt.ylim([0,1]) 
         plt.xlim([0, self.max_time]) # x-rane between 0 to max_time
         plt.grid(True, alpha=1)
         
         if pr_curve is True: # plot practice rate curve on secondary y-axis
+            ax1 = plt.gca()
             ax2 = ax1.twinx()
-            ax2.step(self.practice_times, self.practice_rates, where='pre', linestyle='--', lw=1.5, 
-                     label='Practice Rate', color='blue', alpha=0.6)
+            ax2.step(self.practice_times, self.practice_rates, where='pre', linestyle='-', lw=1.5, 
+                     label='Practice Rate', color='blue', alpha=1)
+
+
             ax2.set_ylabel('Practice Rate', fontsize=16, color='black')
             ax2.set_ylim([0, max(self.practice_rates)*1.1]) # y-range for practice rate axis
             ax2.tick_params(axis='y', labelcolor='black')
 
-        plt.legend(fontsize=12)
+            # Combined legend
+            lines1, labels1 = ax1.get_legend_handles_labels()
+            lines2, labels2 = ax2.get_legend_handles_labels()
+            ax1.legend(lines1 + lines2, labels1 + labels2, fontsize=16, loc='best')
+        else:
+            plt.legend(fontsize=16, loc='best')
+        
+        #ax2.legend(fontsize=16, loc='lower right')
+        #ax1.legend(fontsize=16, loc='center right')
+        plt.title('Sample Learning Trajectory', fontsize=22)
 
         if save_location is not None:
             plt.savefig(save_location, dpi=save_dpi)
