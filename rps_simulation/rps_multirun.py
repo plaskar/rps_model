@@ -126,8 +126,6 @@ class RPS_multirun:
             linewidth=2,
             bw_adjust=bw_adjust
         )
-
-        
     
         # tick-params:
         plt.tick_params(left = True, right = False , labelleft = True)
@@ -235,7 +233,7 @@ class RPS_multirun:
         if self.deadlines is not None:
             normalized_weights = [float(i)/max(self.deadline_weights) for i in self.deadline_weights] 
             for deadline, weight in zip(self.deadlines, normalized_weights):
-                ax1.axvline(x=deadline, ymin=0, ymax=weight, color='black', alpha=0.5, linestyle='-', lw=1)
+                ax1.axvline(x=deadline, ymin=0, ymax=weight, color='red', alpha=0.5, linestyle='-', lw=3)
         
         
         # Creating the histogram on the right using seaborn

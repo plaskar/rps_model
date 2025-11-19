@@ -3,3 +3,6 @@ This package encodes the Reciprocal-Practice-Skill (RPS) model of free learning.
 
 To start off, check out our 2024 Cog-Sci conference paper [here](https://escholarship.org/uc/item/98s6q1bc) which explains the basic model. The *Basic Model Analysis.ipynb* file in the *notebooks* folder reproduces the figures from the conference paper. 
 
+
+
+## Acknow
