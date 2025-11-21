@@ -231,9 +231,9 @@ class RPS_multirun:
 
         # Adding deadlines to the plot, if they exist:
         if self.deadlines is not None:
-            normalized_weights = [float(i)/max(self.deadline_weights) for i in self.deadline_weights] 
+            normalized_weights = [float(i)/sum(self.deadline_weights) for i in self.deadline_weights] 
             for deadline, weight in zip(self.deadlines, normalized_weights):
-                ax1.axvline(x=deadline, ymin=0, ymax=weight, color='red', alpha=0.5, linestyle='-', lw=3)
+                ax1.axvline(x=deadline, ymin=0, ymax=weight, color='red', alpha=0.7, linestyle='-', lw=4)
         
         
         # Creating the histogram on the right using seaborn
