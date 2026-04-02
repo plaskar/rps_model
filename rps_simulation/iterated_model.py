@@ -139,11 +139,11 @@ def create_bifurcation_diagram(param_range, param_name='a',
         plt.plot(stab1_x, stab1_y, lw=4, color='black', linestyle='-', label='Stable')
         
     if param_name=='a':
-        plt.xlabel(r'Parameter $\mathit{a}$', fontsize=19)
+        plt.xlabel(r'Parameter $a$', fontsize=22)
     elif param_name=='b':
-        plt.xlabel(r'Parameter $\mathit{b}$', fontsize=19)
+        plt.xlabel(r'Parameter $b$', fontsize=22)
     
-    plt.ylabel('Skill (S) Fixed Points', fontsize=19)
+    plt.ylabel(r'Fixed Points of Skill $S$', fontsize=22)
     plt.legend(fontsize=16)
     
     if save is not False:

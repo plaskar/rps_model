@@ -95,18 +95,24 @@ class logistic_model:
         # Determine stability colors
         cols = stability_colour(deriv_fp_vals)
 
+        
+
         # ----------------
         # --- Plotting ---
         # ----------------
+
+        # Map parameter names to math-mode labels
+        math_labels = {'a': r'$a$', 'b': r'$b$', 'alpha': r'$\alpha$', 'beta': r'$\beta$'}
+        par_label = math_labels.get(bf_par, bf_par)
+
         plt.figure(figsize=(10, 6))
         for i in range(len(fp_vals)):
             plt.scatter(par_vals, fp_vals[i], c=cols[i], s=12)
         
-        #plt.title('Bifurcation Diagram', fontsize=19)
-        plt.xlabel(f'Parameter {bf_par}', fontsize=19)
+        plt.xlabel(r'Parameter ' + par_label, fontsize=19)
         plt.ylim([-0.01, 1])
         plt.xlim(par_vals[0], par_vals[-1])
-        plt.ylabel('Equilibrium Skill S', fontsize=19)
+        plt.ylabel(r'Equilibrium Skill $S$', fontsize=19)
         
         # Generate the legend
         legend_elements = [Patch(facecolor='blue', label='Stable'), Patch(facecolor='red', label='Unstable')]
@@ -118,7 +124,6 @@ class logistic_model:
 
         # uncomment below if you want to get calculated fixed point and derivatives:
         # return fp_vals, deriv_fp_vals  
-
 
 
     """
@@ -185,10 +190,10 @@ class logistic_model:
 
         
         #plt.title('Bifurcation Diagram', fontsize=19)
-        plt.xlabel('Parameter $\mathit{a}$', fontsize=19)
+        plt.xlabel(r'Parameter $a$', fontsize=19)
         plt.ylim([-0.02, 1])
         plt.xlim(0, a_max)
-        plt.ylabel('Skill (S) Fixed Points', fontsize=19)
+        plt.ylabel(r'Fixed Points of Skill $S$', fontsize=19)
 
         # Add x-ticks including a1 and a2
         xticks = [0, 1, 2, 3, a1, a2]  # Define ticks
@@ -204,7 +209,7 @@ class logistic_model:
         
         # Add larger, bold custom labels for a1 and a2
         ax.annotate(
-            '$\mathit{a}_1$',  # Custom LaTeX label for a1
+            r'$a_1$',  # Custom LaTeX label for a1
             xy=(a1, -0.08),  # Position slightly below the x-axis
             xycoords=('data', 'axes fraction'),
             fontsize=15,  # Larger font size for a1
@@ -212,7 +217,7 @@ class logistic_model:
             ha='center'  # Center-align the label
         )
         ax.annotate(
-            '$\mathit{a}_2$',  # Custom LaTeX label for a2
+            r'$a_2$',  # Custom LaTeX label for a2
             xy=(a2, -0.08),  # Position slightly below the x-axis
             xycoords=('data', 'axes fraction'),
             fontsize=15,  # Larger font size for a2
@@ -289,10 +294,10 @@ class logistic_model:
     
             
             #plt.title('Bifurcation Diagram', fontsize=19)
-            plt.xlabel('Parameter $\mathit{b}$', fontsize=19)
+            plt.xlabel(r'Parameter $b$', fontsize=19)
             plt.ylim([-0.02, 1])
             plt.xlim(0, b_max)
-            plt.ylabel('Skill (S) Fixed Points', fontsize=19)
+            plt.ylabel(r'Fixed Points of Skill $S$', fontsize=19)
             
             # Add x-ticks including a1 and a2
             xticks = [0, 1, 3, 4, 5, b1]  # Define ticks
@@ -427,10 +432,10 @@ class exponential_model:
 
         
         #plt.title('Bifurcation Diagram', fontsize=19)
-        plt.xlabel('Parameter $\mathit{a}$', fontsize=19)
+        plt.xlabel(r'Parameter $a$', fontsize=19)
         plt.ylim([-0.02, 1])
         plt.xlim(0, a_max)
-        plt.ylabel('Skill (S) Fixed Points', fontsize=19)
+        plt.ylabel(r'Fixed Points of Skill $S$', fontsize=19)
 
         # Plot legend: 
         plt.legend(fontsize=16,
@@ -490,10 +495,10 @@ class exponential_model:
 
         
         #plt.title('Bifurcation Diagram', fontsize=19)
-        plt.xlabel('Parameter $\mathit{b}$', fontsize=19)
+        plt.xlabel(r'Parameter $b$', fontsize=19)
         plt.ylim([-0.02, 1])
         plt.xlim(0, b_max)
-        plt.ylabel('Skill (S) Fixed Points', fontsize=19)
+        plt.ylabel(r'Fixed Points of Skill $S$', fontsize=19)
 
         # Plot legend: 
         plt.legend(fontsize=16,
@@ -565,7 +570,8 @@ class general_model:
             plt.scatter(par_vals, fp_vals[i], c=cols[i], s=12)
 
         #plt.title('Bifurcation Diagram', fontsize=19)
-        plt.xlabel(f'Parameter {bf_par}', fontsize=19)
+        math_labels = {'a': r'$a$', 'b': r'$b$', 'alpha': r'$\alpha$', 'beta': r'$\beta$'}
+        plt.xlabel(r'Parameter ' + math_labels.get(bf_par, bf_par), fontsize=19)    
         plt.ylim([-0.01, 1])
         plt.xlim(par_vals[0], par_vals[-1])
         plt.ylabel('Equilibrium Skill S', fontsize=19)

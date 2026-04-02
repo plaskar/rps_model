@@ -1,3 +1,5 @@
+from pyparsing import line
+
 import numpy as np
 import matplotlib.pyplot as plt
 import pandas as pd
@@ -147,13 +149,16 @@ class RPS_sensitivity:
         """
 
         # Default plot parameters, optionally user can change some/all 
-        # of these using by providing plot_parms:
-        default_plot_parms = {'alpha': 0.95, 'palette': sns.color_palette("Greys", n_colors=6)[1:], # change n_colors
+        # of these using by providing plot_parms: 
+        # alt: sns.color_palette("YlOrRd", n_colors=6)[1:]
+        default_plot_parms = {'alpha': 0.95, 
+                              'palette': sns.color_palette("Greys", n_colors=6)[1:], # change n_colors
+                              #'palette': sns.color_palette("YlOrRd", n_colors=6)[1:],
                               'bw_adj': 0.5, 'x_fs': 20, 'y_fs': 20, 
                               'title_fs':20, 'legend_head_fs':20, 'legend_txt_fs':20, 
-                              'linewidth':1.5,
+                              'linewidth':2,
                               'legend_pos':'upper center',  'common_norm': False,
-                              'save_location': None, 'dpi':256
+                              'save_location': None, 'dpi':256, 'fill': True
                              }
 
         # If plot_parms is provided, update default parameters with it
@@ -177,11 +182,27 @@ class RPS_sensitivity:
         ###### Make Histogram using seaborn ######
         plt.figure(figsize=(12,8), dpi=128)
         
-        ax = sns.kdeplot(df_param, x='final_skills', hue=param, fill = True, palette=plot_parms['palette'],
+        ax = sns.kdeplot(df_param, x='final_skills', hue=param, fill = plot_parms['fill'], palette=plot_parms['palette'],
                          alpha=plot_parms['alpha'], bw_adjust=plot_parms['bw_adj'],
                          common_norm=plot_parms['common_norm'], 
                          linewidth=plot_parms['linewidth'])
-        
+
+        # Apply varying linewidths if provided
+        if plot_parms['linewidths'] is not None:
+            lines = ax.get_lines()
+            lws = plot_parms['linewidths']
+            # seaborn draws lines in reverse hue order
+            for line, lw in zip(lines, reversed(lws)):
+                line.set_linewidth(lw)
+            # Rebuild legend to reflect varying linewidths
+            labels = [t.get_text() for t in ax.get_legend().get_texts()]
+            handles = []
+            for line, label in zip(lines, labels):
+                handles.append(plt.Line2D([0], [0], color=line.get_color(),
+                                        linewidth=line.get_linewidth(), label=label))
+            ax.get_legend().remove()
+            ax.legend(handles=list(reversed(handles)), labels=labels, title='$'+param+'$') # reverse handles to match hue order
+
         plt.title('Effect of $' + param + '$', fontsize=plot_parms['title_fs'])
         plt.xlim([0,1]) # restrict skill range on x-axis
         plt.tick_params(left=False, labelleft=False)
@@ -221,9 +242,9 @@ class RPS_sensitivity:
                               'palette': sns.color_palette("Greys", n_colors=6)[1:], 
                               'bw_adj': 0.8, 'x_fs': 20, 'y_fs': 20, 'x_lim_max':1000, 
                               'title_fs':20, 'legend_head_fs':20, 'legend_txt_fs':20, 
-                              'linewidth':1.5,
+                              'linewidth':2,
                               'legend_pos':'upper center',  'common_norm':False,
-                              'save_location': None, 'dpi':256
+                              'save_location': None, 'dpi':256, 'fill': True
                              }
 
         # If plot_parms is provided, update default parameters with it
@@ -249,13 +270,29 @@ class RPS_sensitivity:
         
         ax = sns.kdeplot(df_param, x='n_prac', 
                          hue=param, 
-                         fill = True, 
+                         fill = plot_parms['fill'],
                          palette=plot_parms['palette'],
                          alpha=plot_parms['alpha'], 
                          bw_adjust=plot_parms['bw_adj'],
                          common_norm=plot_parms['common_norm'],
                          #linestyle='--',
                          linewidth=plot_parms['linewidth'])
+        
+        # Apply varying linewidths if provided
+        if plot_parms['linewidths'] is not None:
+            lines = ax.get_lines()
+            lws = plot_parms['linewidths']
+            # seaborn draws lines in reverse hue order
+            for line, lw in zip(lines, reversed(lws)):
+                line.set_linewidth(lw)
+            # Rebuild legend to reflect varying linewidths
+            labels = [t.get_text() for t in ax.get_legend().get_texts()]
+            handles = []
+            for line, label in zip(lines, labels):
+                handles.append(plt.Line2D([0], [0], color=line.get_color(),
+                                        linewidth=line.get_linewidth(), label=label))
+            ax.get_legend().remove()
+            ax.legend(handles=list(reversed(handles)), labels=labels, title='$'+param+'$') # reverse handles to match hue order
         
         plt.title('Effect of $' + param + '$', fontsize=plot_parms['title_fs'])
         plt.xlim([0,plot_parms['x_lim_max']]) # restrict range on x-axis
